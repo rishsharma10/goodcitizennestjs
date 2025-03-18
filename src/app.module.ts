@@ -11,6 +11,7 @@ import { VerificationStrategy } from './authentication/strategies/verification.s
 import { TempStrategy } from './authentication/strategies/temp-jwt.strategy';
 import { RolesGuard } from './authentication/guards/roles.guard';
 import { JwtModule } from '@nestjs/jwt';
+import { CommonService } from './common/common.service';
 
 @Module({
   imports: [
@@ -34,6 +35,6 @@ import { JwtModule } from '@nestjs/jwt';
     WebSocketModule
   ],
   controllers: [AppController],
-  providers: [AppService, JwtStrategy,  VerificationStrategy, TempStrategy, RolesGuard],
+  providers: [AppService, CommonService,JwtStrategy,  VerificationStrategy, TempStrategy, RolesGuard],
 })
 export class AppModule {}

@@ -1,6 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsString, IsStrongPassword, Length, MinLength } from "class-validator";
-import { Device_TYPE } from "../../common/utils";
+import { Device_TYPE, UserType } from "../../common/utils";
 import { Types } from "mongoose";
 
 export class SignupDto {
@@ -21,6 +21,12 @@ export class SignupDto {
     })
     @IsString()
     password: string;
+
+    @ApiProperty({default:UserType.USER})
+    @IsNotEmpty({ message: 'user type is required' })
+    @IsEnum(UserType)
+    @IsString()
+    role: string;
 
     @ApiProperty()
     @IsNotEmpty({ message: 'fcm token is required' })
@@ -88,4 +94,28 @@ export class ResponseUserDto {
   constructor(partial: Partial<ResponseUserDto>) {
     Object.assign(this, partial);
   }
+}
+
+export class LoginDto {
+  @ApiProperty({ default: "john@yopmail.com" })
+  @IsEmail({}, { message: 'Email must be an valid email address' })
+  @IsNotEmpty({ message: 'Email is required' })
+  email: string;
+
+  @ApiProperty()
+  @IsNotEmpty({ message: 'password is required' })
+  @IsString()
+  @MinLength(6)
+  password: string;
+
+  @ApiProperty()
+  @IsNotEmpty({ message: 'fcm token is required' })
+  @IsString()
+  fcm_token: string;
+
+  @ApiProperty({ default: Device_TYPE.WEB })
+  @IsNotEmpty({ message: 'device type is required' })
+  @IsEnum(Device_TYPE)
+  @IsString()
+  device_type: string;
 }

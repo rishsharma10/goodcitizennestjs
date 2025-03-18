@@ -33,6 +33,20 @@ export class User {
     @Prop({ type: Boolean, default: false })
     is_email_verified: boolean;
     
+    @Prop({ 
+        type: { 
+            latitude: { type: Number, required: true }, 
+            longitude: { type: Number, required: true } 
+        } 
+    })
+    location: { latitude: number; longitude: number };
+
+    @Prop({ type: Number })
+    latitude: number;
+
+    @Prop({ type: Number })
+    longitude: number;
+
     @Prop({ default: moment().utc().valueOf() })
     created_at: number;
 
