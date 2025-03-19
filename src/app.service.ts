@@ -6,7 +6,7 @@ import { Session,SessionDocument } from './user/entities/session.entity';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { CommonService } from './common/common.service';
-import * as moment from 'moment';
+import  moment from 'moment';
 import { LoginDto, OtpDto, ResponseUserDto, SignupDto } from './user/dto/create-user.dto';
 import { validate } from 'class-validator';
 

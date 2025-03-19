@@ -6,7 +6,6 @@ import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { config } from 'dotenv';
 import * as bodyParser from 'body-parser';
-import * as morgan from "morgan"; 
 config()
 const PORT = process.env.PORT || 3001; 
 
@@ -18,7 +17,6 @@ async function bootstrap() {
   app.use(express.urlencoded({ extended: true }));
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.json());
-  app.use(morgan('dev'));
   app.useGlobalPipes(new ValidationPipe({ skipMissingProperties: true, transform: true, whitelist: true }));
   const config = new DocumentBuilder()
     .setTitle('Goodcitizen App')
