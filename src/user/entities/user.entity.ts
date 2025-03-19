@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
-import * as moment from "moment";
+import  moment from "moment";
 import { UserType } from "../../common/utils";
 
 @Schema({ versionKey: false })
@@ -47,10 +47,10 @@ export class User {
     @Prop({ type: Number })
     longitude: number;
 
-    @Prop({ default: moment().utc().valueOf() })
+    @Prop({ default: () => moment().utc().valueOf() })
     created_at: number;
 
-    @Prop({ default: moment().utc().valueOf() })
+    @Prop({ default: () => moment().utc().valueOf() })
     updated_at: number;
 }
 

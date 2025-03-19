@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
-import * as moment from "moment";
+import moment from "moment";
 import { User, UserSchema } from "./user.entity";
 import { Device_TYPE, UserType } from "../../common/utils";
 
@@ -24,8 +24,8 @@ export class Session {
 
     @Prop({ default: null })
     created_at: number;
-
-    @Prop({ default: moment().utc().valueOf() })
+    
+    @Prop({ default: () => moment().utc().valueOf() })
     updated_at: number;
 }
 

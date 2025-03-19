@@ -18,11 +18,11 @@ async function bootstrap() {
   app.use(express.urlencoded({ extended: true }));
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(bodyParser.json());
-  app.use(morgan(':method :url :status :res[content-length] - :response-time ms'));
+  app.use(morgan('dev'));
   app.useGlobalPipes(new ValidationPipe({ skipMissingProperties: true, transform: true, whitelist: true }));
   const config = new DocumentBuilder()
-    .setTitle('Ambulance App')
-    .setDescription('Ambulance App API description')
+    .setTitle('Goodcitizen App')
+    .setDescription('Goodcitizen App API description')
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', name: 'authorization', in: 'header' }, 'authorization')
     .addServer(`http://localhost:3001/`, "local server")
