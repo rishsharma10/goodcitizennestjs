@@ -12,6 +12,7 @@ import { TempStrategy } from './authentication/strategies/temp-jwt.strategy';
 import { RolesGuard } from './authentication/guards/roles.guard';
 import { JwtModule } from '@nestjs/jwt';
 import { CommonService } from './common/common.service';
+import { modelDefinitions } from './user/entities';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { CommonService } from './common/common.service';
         uri: configService.get<string>('DATABASE_URL'),
       }),
     }),
+    MongooseModule.forFeature(modelDefinitions),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -32,7 +34,8 @@ import { CommonService } from './common/common.service';
     }),
     DriverModule, 
     UserModule, 
-    WebSocketModule
+    WebSocketModule,
+    WebSocketModule,
   ],
   controllers: [AppController],
   providers: [AppService, CommonService,JwtStrategy,  VerificationStrategy, TempStrategy, RolesGuard],

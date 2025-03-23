@@ -1,34 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { DriverService } from './driver.service';
-import { CreateDriverDto } from './dto/create-driver.dto';
-import { UpdateDriverDto } from './dto/update-driver.dto';
+import { RideDto } from './dto/driver.dto';
+import { ApiBearerAuth, ApiConsumes, ApiOperation } from '@nestjs/swagger';
+import { UserType } from 'src/common/utils';
+import { Roles } from 'src/authentication/roles.decorator';
+import { JwtAuthGuard } from 'src/authentication/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/authentication/guards/roles.guard';
 
-@Controller('driver')
+@Controller({ path: 'driver', version: '1' })
 export class DriverController {
   constructor(private readonly driverService: DriverService) {}
 
-  @Post()
-  create(@Body() createDriverDto: CreateDriverDto) {
-    return this.driverService.create(createDriverDto);
-  }
 
-  @Get()
-  findAll() {
-    return this.driverService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.driverService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDriverDto: UpdateDriverDto) {
-    return this.driverService.update(+id, updateDriverDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.driverService.remove(+id);
+   /**
+   * Will handle the user and driver Signup controller logic
+   * @param {SignupDto} dto - The user signup data
+   * @returns 
+   */
+  @ApiBearerAuth("authorization")
+  @Roles(UserType.DRIVER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Post('start-ride')
+  @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+  @ApiOperation({ summary: `User Signup Api` })
+  async start_ride(@Body() dto: RideDto, @Req() req) {
+    return await this.driverService.start_ride(dto, req.user);
   }
 }

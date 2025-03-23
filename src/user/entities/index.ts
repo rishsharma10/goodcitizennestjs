@@ -10,6 +10,6 @@ export const modelDefinitions: ModelDefinition[] = [
     {
         name: Session.name,
         schema: SessionSchema, 
-      },
+    },
   ];
   

@@ -58,4 +58,16 @@ export class CommonService {
           }
         );
       }
+
+      async decodeToken(access_token: string) {
+        try {
+          let decode = await this.jwtService.verify(access_token, {
+            secret: this.JWT_ACCESS_SECRET,
+          });
+    
+          return decode
+        } catch (error) {
+          throw error
+        }
+      }
 }

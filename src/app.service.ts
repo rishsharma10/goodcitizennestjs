@@ -6,7 +6,7 @@ import { Session,SessionDocument } from './user/entities/session.entity';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { CommonService } from './common/common.service';
-import  moment from 'moment';
+import  * as moment from 'moment';
 import { LoginDto, OtpDto, ResponseUserDto, SignupDto } from './user/dto/create-user.dto';
 import { validate } from 'class-validator';
 
@@ -17,8 +17,6 @@ export class AppService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Session.name) private sessionModel: Model<SessionDocument>,
-    private jwtService: JwtService,
-    private configService: ConfigService,
     private commonService: CommonService,
 
   ){}

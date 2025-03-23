@@ -10,10 +10,6 @@ import { RolesGuard } from './authentication/guards/roles.guard';
 @Controller({ path: 'app', version: '1' })
 export class AppController {
     constructor(private readonly appService: AppService) {}
-    @Get()
-    getHome(): string {
-      return 'Welcome to the GoodCitizen API!';
-    }
     
     /**
      * Will handle the user and driver Signup controller logic

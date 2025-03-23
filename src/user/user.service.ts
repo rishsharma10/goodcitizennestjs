@@ -8,7 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CommonService } from '../common/common.service';
 import { UserType } from 'src/common/utils';
-import moment from 'moment';
+import * as moment from 'moment';
 import { validate } from 'class-validator';
 import { Response } from 'express';
 
