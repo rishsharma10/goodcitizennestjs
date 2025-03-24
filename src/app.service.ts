@@ -119,4 +119,27 @@ export class AppService {
       throw error
     }
   }
+
+
+   async save_coordinates(user: any,lat: string, long: string): Promise<any> {
+          try {
+              let query = { _id: new Types.ObjectId(user._id) }
+              let location = {
+                  type: "Point",
+                  coordinates: [+long, +lat] // Note: MongoDB stores coordinates as [longitude, latitude]
+              };
+              // let direction = await this.calculatDirection(user.latitude, user.longitude, +lat, +long);
+              let update = {
+                  $set: {
+                      pre_location: location,
+                      location,
+                      latitude: +lat,
+                      longitude: +long,
+                  }
+              }
+              return await this.userModel.findByIdAndUpdate(query, update, { new: true });
+          } catch (error) {
+              throw error
+          }
+      }
 }

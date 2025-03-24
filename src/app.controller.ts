@@ -38,16 +38,16 @@ export class AppController {
       return await this.appService.verify_otp(dto, req.user);
     }
   
-     /**
+    /**
      *  Will handle the user and driver login controller logic
      * @param {LoginDto} dto - The user login data
      * @returns
-     */
-     @Post('login')
-     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-     @ApiOperation({ summary: `User Login Api` })
-     async login(@Body() dto: LoginDto,@Res({passthrough: true})res: Response) {
-       return await this.appService.login(dto,res);
-     }
+    */
+    @Post('login')
+    @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+    @ApiOperation({ summary: `User Login Api` })
+    async login(@Body() dto: LoginDto,@Res({passthrough: true})res: Response) {
+      return await this.appService.login(dto,res);
+    }
   }
 

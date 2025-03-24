@@ -29,6 +29,16 @@ export class SignupDto {
     role: string;
 
     @ApiProperty()
+    @IsNotEmpty({ message: 'latitude is required' })
+    @IsString()
+    lat: string;
+    
+    @ApiProperty()
+    @IsNotEmpty({ message: 'longitude is required' })
+    @IsString()
+    long: string;
+
+    @ApiProperty()
     @IsNotEmpty({ message: 'fcm token is required' })
     @IsString()
     fcm_token: string;
@@ -107,6 +117,16 @@ export class LoginDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  @ApiProperty()
+  @IsNotEmpty({ message: 'latitude is required' })
+  @IsString()
+  lat: string;
+  
+  @ApiProperty()
+  @IsNotEmpty({ message: 'longitude is required' })
+  @IsString()
+  long: string;
 
   @ApiProperty()
   @IsNotEmpty({ message: 'fcm token is required' })
