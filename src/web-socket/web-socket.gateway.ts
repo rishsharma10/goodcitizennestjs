@@ -6,7 +6,7 @@ import { Types } from 'mongoose';
 import { UnauthorizedException } from '@nestjs/common';
 
 interface CustomSocket extends Socket {
-  user:any;
+  user: any;
 }
 
 @WebSocketGateway({ cors: { origin: '*' } })
@@ -14,7 +14,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
   private activeUsers = new Map<string, Socket>();
-  constructor(private readonly webSocketService: WebSocketService) {}
+  constructor(private readonly webSocketService: WebSocketService) { }
 
   async handleConnection(socket: CustomSocket, ...args: any[]) {
     try {
@@ -22,25 +22,25 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log("socket Id ", socket.id);
       console.log("token -------", token);
       if (!token) throw new UnauthorizedException();
-      let user = await this.webSocketService.handleConnection(token,socket.id);
-      if(!user) throw new UnauthorizedException();
+      let user = await this.webSocketService.handleConnection(token, socket.id);
+      if (!user) throw new UnauthorizedException();
       this.activeUsers.set((user._id).toString(), socket);
     } catch (error) {
-        throw error
+      throw error
     }
   }
 
   async handleDisconnect(socket: CustomSocket) {
     try {
-        console.log(`Client disconnected: ${socket.id}`);
-        const userId = socket.user._id as string;
-        if (userId) {
-          await this.webSocketService
-          this.activeUsers.delete(userId);
-          console.log(`User ${userId} disconnected.`);
-        }
+      console.log(`Client disconnected: ${socket.id}`);
+      const userId = socket.user._id as string;
+      if (userId) {
+        await this.webSocketService
+        this.activeUsers.delete(userId);
+        console.log(`User ${userId} disconnected.`);
+      }
     } catch (err) {
-        throw err
+      throw err
     }
   }
 
@@ -58,9 +58,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       let user_id = socket.user._id;
       let driver = await this.webSocketService.save_coordinates(user_id, payload);
-      let users = await this.webSocketService.findUsersAhead(driver._id,driver?.latitude,
-        driver?.longitude,driver?.direction,1);
-        
+      let users = await this.webSocketService.findUsersAhead(driver._id, driver?.latitude,
+        driver?.longitude, driver?.direction, 1);
     } catch (error) {
       throw error
     }
@@ -68,7 +67,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async sendNotification(users, driver) {
     try {
-      
+
     } catch (error) {
       throw error
     }

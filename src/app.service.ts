@@ -1,38 +1,58 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { User,UserDocument } from './user/entities/user.entity';
+import { User, UserDocument } from './user/entities/user.entity';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
-import { Session,SessionDocument } from './user/entities/session.entity';
+import { Session, SessionDocument } from './user/entities/session.entity';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { CommonService } from './common/common.service';
-import  * as moment from 'moment';
-import { LoginDto, OtpDto, ResponseUserDto, SignupDto } from './user/dto/create-user.dto';
+import * as moment from 'moment';
+import { ForgotPassword, LoginDto, OtpDto, ResendOtp, ResetForgotPassword, ResponseUserDto, SignupDto, VerifyForgotPassword } from './user/dto/create-user.dto';
 import { validate } from 'class-validator';
 
 @Injectable()
 export class AppService {
   private option = { lean: true } as const;
   private updateOption = { new: true } as const;
+  private VERIFICATION_JWT_SECRET: string
+  private VERIFICATION_JWT_EXPIRY: string
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Session.name) private sessionModel: Model<SessionDocument>,
     private commonService: CommonService,
+    private jwtService: JwtService,
+    private configService: ConfigService,
+  ) {
+    this.VERIFICATION_JWT_SECRET = this.configService.get<string>('VERIFICATION_JWT_SECRET')!,
+      this.VERIFICATION_JWT_EXPIRY = this.configService.get<string>('VERIFICATION_JWT_EXPIRY')!
+  }
 
-  ){}
+  private async generateForgotPasswordToken(
+    _id: Types.ObjectId | string,
+    email: string, role: string
+  ) {
+    return await this.jwtService.sign(
+      { _id, email, role },
+      {
+        secret: this.VERIFICATION_JWT_SECRET,
+        expiresIn: this.VERIFICATION_JWT_EXPIRY
+      }
+    );
+  }
 
-  async signup(dto: SignupDto):Promise<any>{
+  async signup(dto: SignupDto): Promise<any> {
     try {
-      let {email,password} = dto
+      let { email, password } = dto
       let query = { email: email.toLowerCase(), is_deleted: false }
-      let projection = { email: 1}
+      let projection = { email: 1 }
       let isUser = await this.userModel.findOne(query, projection, this.option);
-      if(isUser) throw new BadRequestException("Email already exist");
+      if (isUser) throw new BadRequestException("Email already exist");
       let hashPassword = await this.commonService.hashPassword(password);
       let otp = "123456"
       let data = {
         ...dto,
-        role:dto.role,
+        role: dto.role,
         email: email.toLowerCase(),
         password: hashPassword,
         otp,
@@ -47,7 +67,7 @@ export class AppService {
     }
   }
 
-  async verify_otp(dto: OtpDto, user):Promise<any>{
+  async verify_otp(dto: OtpDto, user): Promise<any> {
     try {
       const { otp, fcm_token, device_type } = dto;
       let query = { _id: user._id }
@@ -59,7 +79,7 @@ export class AppService {
       let update = { otp_expire_at: null, otp: null, is_email_verified: true }
       let update_user = await this.userModel.findByIdAndUpdate(query, update, this.updateOption);
       if (!update_user) throw new BadRequestException("Failed to update user");
-      let session = await this.createSession(update_user._id,update_user.role, fcm_token, device_type);
+      let session = await this.createSession(update_user._id, update_user.role, fcm_token, device_type);
       let access_token = await this.commonService.generateToken(update_user._id, session._id, update_user.email, update_user.role)
       const userData = { ...update_user.toObject(), access_token };
       const response = new ResponseUserDto(userData);
@@ -70,21 +90,21 @@ export class AppService {
       console.log("error----", error);
       throw error
     }
-  }  
+  }
 
-  createSession = async(user_id: string | Types.ObjectId,
+  createSession = async (user_id: string | Types.ObjectId,
     role: string,
     fcm_token: string,
-    device_type: string) =>{
-      await this.sessionModel.deleteMany({user_id})
-      return await this.sessionModel.create({ user_id, role, fcm_token, device_type })
+    device_type: string) => {
+    await this.sessionModel.deleteMany({ user_id })
+    return await this.sessionModel.create({ user_id, role, fcm_token, device_type })
   }
 
   async login(dto: LoginDto, res: Response) {
     try {
       let { email, password, fcm_token, device_type } = dto;
       let query = { email: email.toLowerCase(), is_deleted: false }
-      let projection = {email: 1, password: 1, role: 1, is_email_verified: 1}
+      let projection = { email: 1, password: 1, role: 1, is_email_verified: 1 }
       let isUser = await this.userModel.findOne(query, projection, this.option);
       if (!isUser) throw new BadRequestException("User doesn't exist. Please sign-up.");
       if (isUser.is_email_verified === false) {
@@ -120,26 +140,96 @@ export class AppService {
     }
   }
 
-
-   async save_coordinates(user: any,lat: string, long: string): Promise<any> {
-          try {
-              let query = { _id: new Types.ObjectId(user._id) }
-              let location = {
-                  type: "Point",
-                  coordinates: [+long, +lat] // Note: MongoDB stores coordinates as [longitude, latitude]
-              };
-              // let direction = await this.calculatDirection(user.latitude, user.longitude, +lat, +long);
-              let update = {
-                  $set: {
-                      pre_location: location,
-                      location,
-                      latitude: +lat,
-                      longitude: +long,
-                  }
-              }
-              return await this.userModel.findByIdAndUpdate(query, update, { new: true });
-          } catch (error) {
-              throw error
-          }
+  async save_coordinates(user: any, lat: string, long: string): Promise<any> {
+    try {
+      let query = { _id: new Types.ObjectId(user._id) }
+      let location = {
+        type: "Point",
+        coordinates: [+long, +lat] // Note: MongoDB stores coordinates as [longitude, latitude]
+      };
+      // let direction = await this.calculatDirection(user.latitude, user.longitude, +lat, +long);
+      let update = {
+        $set: {
+          pre_location: location,
+          location,
+          latitude: +lat,
+          longitude: +long,
+        }
       }
+      return await this.userModel.findByIdAndUpdate(query, update, { new: true });
+    } catch (error) {
+      throw error
+    }
+  }
+
+  async forgot_password(dto: ForgotPassword) {
+    try {
+      let { email } = dto;
+      let query = { email: email.toLowerCase(), is_deleted: false }
+      let projection = { email: 1 }
+      let isUser = await this.userModel.findOne(query, projection, this.option);
+      if (!isUser) throw new BadRequestException("User doesn't exist. Please sign-up.");
+      await this.generate_otp(isUser._id);
+      return { message: "Otp sent successfully." }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  async verify_forgot_password(dto: VerifyForgotPassword) {
+    try {
+      let { email, otp } = dto;
+      let query = { email: email.toLowerCase(), is_deleted: false }
+      let projection = { otp: 1, otp_expire_at: 1 }
+      let isUser = await this.userModel.findOne(query, projection, this.option);
+      if (!isUser) throw new BadRequestException("User doesn't exist. Please sign-up.");
+      if (new Date(isUser.otp_expire_at) < new Date()) throw new BadRequestException("Otp expired");
+      if (+isUser.otp !== +otp) throw new BadRequestException("Invalid otp");
+      let access_token = await this.generateForgotPasswordToken(isUser._id, isUser.email, isUser.role)
+      return { access_token }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  async reset_forgot_password(dto: ResetForgotPassword, user) {
+    try {
+      let { password } = dto;
+      let hashPassword = await this.commonService.hashPassword(password);
+      let query = { _id: user._id }
+      let update = { password: hashPassword }
+      await this.userModel.findByIdAndUpdate(query, update, this.updateOption);
+      return { message: "Password reset successfully." }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  async logout(dto) {
+    try {
+      await this.sessionModel.findByIdAndDelete({ _id: dto.session_id });
+      return { message: "Logout Successfully." }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  async resend_otp(dto: ResendOtp) {
+    try {
+      let { email } = dto;
+      let query = { email: email.toLowerCase(), is_deleted: false }
+      let projection = { email: 1 }
+      let isUser = await this.userModel.findOne(query, projection, this.option);
+      if (!isUser) throw new BadRequestException("User doesn't exist. Please sign-up.");
+      let access_token = await this.commonService.generateTempToken(isUser._id, isUser.email, isUser.role)
+      await this.generate_otp(isUser._id);
+      let data = {
+        message: "Otp sent successfully.",
+        access_token
+      }
+      return { data }
+    } catch (error) {
+      throw error
+    }
+  }
 }

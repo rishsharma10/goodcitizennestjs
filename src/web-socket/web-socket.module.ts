@@ -14,6 +14,6 @@ import { WebSocketController } from './web-socket.controller';
     MongooseModule.forFeature(modelDefinitions)
   ],
   controllers: [WebSocketController],
-  providers: [SocketGateway, WebSocketService, CommonService],
+  providers: [SocketGateway, WebSocketService,CommonService],
 })
 export class WebSocketModule {}

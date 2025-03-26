@@ -14,9 +14,10 @@ async function bootstrap() {
   app.enableVersioning({ type: VersioningType.URI }); // URL versioning e.g., /v1/auth
   app.enableCors();
   app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  app.use(bodyParser.urlencoded({ extended: true }));
-  app.use(bodyParser.json());
+  app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, skipMissingProperties: true  }));
+  // app.use(express.urlencoded({ extended: true }));
+  // app.use(bodyParser.urlencoded({ extended: true }));
+  // app.use(bodyParser.json());
   app.useGlobalPipes(new ValidationPipe({ skipMissingProperties: true, transform: true, whitelist: true }));
   const config = new DocumentBuilder()
     .setTitle('Goodcitizen App')

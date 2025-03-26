@@ -13,10 +13,9 @@ import { RolesGuard } from './authentication/guards/roles.guard';
 import { JwtModule } from '@nestjs/jwt';
 import { CommonService } from './common/common.service';
 import { modelDefinitions } from './user/entities';
-
 @Module({
   imports: [
-    ConfigModule.forRoot({isGlobal: true}),
+    ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -32,12 +31,12 @@ import { modelDefinitions } from './user/entities';
         signOptions: { expiresIn: configService.get<string>('JWT_ACCESS_EXPIRY', '1h') },
       }),
     }),
-    DriverModule, 
-    UserModule, 
+    DriverModule,
+    UserModule,
     WebSocketModule,
     WebSocketModule,
   ],
   controllers: [AppController],
-  providers: [AppService, CommonService,JwtStrategy,  VerificationStrategy, TempStrategy, RolesGuard],
+  providers: [AppService, CommonService, JwtStrategy, VerificationStrategy, TempStrategy, RolesGuard],
 })
-export class AppModule {}
+export class AppModule { }

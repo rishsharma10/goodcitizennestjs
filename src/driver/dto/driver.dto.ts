@@ -1,23 +1,17 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { Type } from "class-transformer";
-import { ValidateNested } from "class-validator";
-
-export class LocationDto {
-    @ApiProperty()
-    latitude: number;
-  
-    @ApiProperty()
-    longitude: number;
-}
+import { IsObject } from "class-validator";
 
 export class RideDto {
-    @ApiProperty({ type: LocationDto })
-    @ValidateNested()
-    @Type(() => LocationDto)
-    pickup_location: LocationDto;
-   
-    @ApiProperty({ type: LocationDto })
-    @ValidateNested()
-    @Type(() => LocationDto)
-    destination_location: LocationDto;
+    @ApiProperty({
+        example: { latitude: "12.9716", longitude: "77.5946" }
+    })
+    @IsObject()
+    pickup_location: { latitude: string; longitude: string };
+
+    @ApiProperty({
+        example: { latitude: "12.9716", longitude: "77.5946" }
+    })
+    @IsObject()
+    drop_location: { latitude: string; longitude: string };
 }
+

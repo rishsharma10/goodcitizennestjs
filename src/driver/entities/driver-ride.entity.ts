@@ -23,7 +23,7 @@ export class DriverRide {
             longitude: { type: Number, required: true } 
         } 
     })
-    destination_location: { latitude: number; longitude: number };
+    drop_location: { latitude: number; longitude: number };
 
     @Prop({enum: RideStatus, default: RideStatus.PENDING })
     status: string;
