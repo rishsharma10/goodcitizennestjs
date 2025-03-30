@@ -82,7 +82,7 @@ export class AppController {
    * @returns
    */
   @ApiBearerAuth("authorization")
-  @Roles(UserType.DRIVER)
+  @Roles(UserType.DRIVER, UserType.USER)
   @UseGuards(VerificationAuthGuard, RolesGuard)
   @Patch('reset/forgot-password')
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
@@ -109,8 +109,8 @@ export class AppController {
    * @returns
    */
   @ApiBearerAuth("authorization")
-  @Roles(UserType.USER, UserType.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserType.USER, UserType.DRIVER)
   @Delete('logout')
   @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
   @ApiOperation({ summary: `User Logout Api` })

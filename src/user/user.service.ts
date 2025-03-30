@@ -7,10 +7,11 @@ import { Session, SessionDocument } from './entities/session.entity';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { CommonService } from '../common/common.service';
-import { UserType } from 'src/common/utils';
+import { Query, UserType } from 'src/common/utils';
 import * as moment from 'moment';
 import { validate } from 'class-validator';
 import { Response } from 'express';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -28,6 +29,23 @@ export class UserService {
             const response = new ResponseUserDto(user);
             await validate(response, { whitelist: true });
             return { data: response }
+        } catch (error) {
+            throw error
+        }
+    }
+
+    async update_profile(dto: UpdateUserDto, user) {
+        try {
+            const { email, old_password, new_password } = dto;
+            let update: Query = {}
+            if (email) {
+                let query = { email: email.toLowerCase(), is_deleted: false }
+                let projection = { email: 1 }
+                let isUser = await this.userModel.findOne(query, projection, this.option);
+                if (isUser) throw new BadRequestException("Email already exist");
+                update.email = email.toLowerCase()
+                update.is_email_verified = false
+            }
         } catch (error) {
             throw error
         }

@@ -19,7 +19,7 @@ export class Session {
     @Prop({ default: null })
     refresh_token: string;
 
-    @Prop({ default: Device_TYPE.WEB, enum: Device_TYPE.WEB })
+    @Prop({ default: Device_TYPE.WEB, enum: Device_TYPE })
     device_type: string;
 
     @Prop({ default: null })
