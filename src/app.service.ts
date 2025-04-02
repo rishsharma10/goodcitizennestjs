@@ -9,6 +9,8 @@ import { CommonService } from './common/common.service';
 import * as moment from 'moment';
 import { ForgotPassword, LoginDto, OtpDto, ResendOtp, ResetForgotPassword, ResponseUserDto, SignupDto, VerifyForgotPassword } from './user/dto/create-user.dto';
 import { validate } from 'class-validator';
+import { Query } from './common/utils';
+import { UpdateUserDto } from './user/dto/update-user.dto';
 
 @Injectable()
 export class AppService {
@@ -88,6 +90,33 @@ export class AppService {
       return { data }
     } catch (error) {
       console.log("error----", error);
+      throw error
+    }
+  }
+
+  async profile(user) {
+    try {
+      const response = new ResponseUserDto(user);
+      await validate(response, { whitelist: true });
+      return { data: response }
+    } catch (error) {
+      throw error
+    }
+  }
+
+  async update_profile(dto: UpdateUserDto, user) {
+    try {
+      const { email, old_password, new_password } = dto;
+      let update: Query = {}
+      if (email) {
+        let query = { email: email.toLowerCase(), is_deleted: false }
+        let projection = { email: 1 }
+        let isUser = await this.userModel.findOne(query, projection, this.option);
+        if (isUser) throw new BadRequestException("Email already exist");
+        update.email = email.toLowerCase()
+        update.is_email_verified = false
+      }
+    } catch (error) {
       throw error
     }
   }

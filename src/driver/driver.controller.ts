@@ -10,23 +10,7 @@ import { RolesGuard } from 'src/authentication/guards/roles.guard';
 @Controller({ path: 'driver', version: '1' })
 export class DriverController {
   constructor(private readonly driverService: DriverService) { }
-
-
-  /**
-  *  Will handle the user profile controller logic
-  * @returns
-  */
-  @ApiBearerAuth("authorization")
-  @Roles(UserType.DRIVER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('profile')
-  @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-  @ApiOperation({ summary: `Driver profile Api` })
-  async profile(@Req() req) {
-    return await this.driverService.profile(req.user);
-  }
-
-
+  
   /**
   * Will handle the user and driver Signup controller logic
   * @param {RideDto} dto - The data of pickup and drop location

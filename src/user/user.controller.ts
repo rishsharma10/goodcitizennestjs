@@ -14,31 +14,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
-  /**
-  *  Will handle the user profile controller logic
-  * @returns
-  */
-  @ApiBearerAuth("authorization")
-  @Roles(UserType.USER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get('profile')
-  @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-  @ApiOperation({ summary: `User profile Api` })
-  async profile(@Body() dto: UpdateUserDto, @Req() req) {
-    return await this.userService.update_profile(dto,req.user);
-  }
+  
 
-  /**
- *  Will handle the edit user profile controller logic
- * @returns
- */
-  @ApiBearerAuth("authorization")
-  @Roles(UserType.USER)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Patch('edit/profile')
-  @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
-  @ApiOperation({ summary: `Edit User profile Api` })
-  async edit_profile(@Req() req) {
-    return await this.userService.profile(req.user);
-  }
+ 
 }

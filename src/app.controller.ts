@@ -8,6 +8,7 @@ import { TempAuthGuard } from './authentication/guards/temp-auth.guard';
 import { RolesGuard } from './authentication/guards/roles.guard';
 import { VerificationAuthGuard } from './authentication/guards/verification-auth.guard';
 import { JwtAuthGuard } from './authentication/guards/jwt-auth.guard';
+import { UpdateUserDto } from './user/dto/update-user.dto';
 
 @Controller({ path: 'app', version: '1' })
 export class AppController {
@@ -101,6 +102,34 @@ export class AppController {
   @ApiOperation({ summary: `User resend otp Api` })
   async resend_otp(@Body() dto: ResendOtp) {
     return await this.appService.resend_otp(dto);
+  }
+
+  /**
+    *  Will handle the user profile controller logic
+    * @returns
+    */
+  @ApiBearerAuth("authorization")
+  @Roles(UserType.USER, UserType.DRIVER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Get('profile')
+  @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+  @ApiOperation({ summary: `User profile Api` })
+  async profile(@Req() req) {
+    return await this.appService.profile(req.user);
+  }
+
+  /**
+   *  Will handle the user profile controller logic
+   * @returns
+   */
+  @ApiBearerAuth("authorization")
+  @Roles(UserType.USER, UserType.DRIVER)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Patch('update-profile')
+  @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+  @ApiOperation({ summary: `User profile Api` })
+  async edit_profile(@Body() dto: UpdateUserDto, @Req() req) {
+    return await this.appService.update_profile(dto, req.user);
   }
 
   /**

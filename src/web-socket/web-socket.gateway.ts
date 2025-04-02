@@ -58,18 +58,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       let user_id = socket.user._id;
       let driver = await this.webSocketService.save_coordinates(user_id, payload);
-      let users = await this.webSocketService.findUsersAhead(driver._id, driver?.latitude,
+      await this.webSocketService.findUsersAhead(driver._id, driver?.latitude,
         driver?.longitude, driver?.direction, 1);
     } catch (error) {
       throw error
     }
   }
 
-  async sendNotification(users, driver) {
-    try {
-
-    } catch (error) {
-      throw error
-    }
-  }
 }

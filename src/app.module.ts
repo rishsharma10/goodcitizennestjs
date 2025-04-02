@@ -13,6 +13,8 @@ import { RolesGuard } from './authentication/guards/roles.guard';
 import { JwtModule } from '@nestjs/jwt';
 import { CommonService } from './common/common.service';
 import { modelDefinitions } from './user/entities';
+import { commonModelDefinitions } from './entities';
+import { FirebaseModule } from 'nestjs-firebase';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -22,18 +24,27 @@ import { modelDefinitions } from './user/entities';
         uri: configService.get<string>('DATABASE_URL'),
       }),
     }),
-    MongooseModule.forFeature(modelDefinitions),
+    MongooseModule.forFeature([...modelDefinitions, ...commonModelDefinitions]),
+    FirebaseModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        googleApplicationCredential: {
+          projectId: configService.get<string>('PROJECT_ID'),
+          clientEmail: configService.get<string>('CLIENT_EMAIL'),
+          privateKey: configService.get<string>('PRIVATE_KEY')
+        }
+      }),
+    }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        secret: "globalSecret",
-        signOptions: { expiresIn: configService.get<string>('JWT_ACCESS_EXPIRY', '1h') },
+        secret: configService.get<string>('JWT_ACCESS_SECRET', 'defaultSecret'),
+        signOptions: { expiresIn: configService.get<string>('JWT_ACCESS_EXPIRY', '1d') },
       }),
     }),
     DriverModule,
     UserModule,
-    WebSocketModule,
     WebSocketModule,
   ],
   controllers: [AppController],

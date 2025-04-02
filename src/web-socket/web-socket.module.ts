@@ -7,6 +7,7 @@ import { modelDefinitions } from 'src/user/entities';
 import { JwtModule } from '@nestjs/jwt';
 import { CommonService } from 'src/common/common.service';
 import { WebSocketController } from './web-socket.controller';
+import { NotificationService } from 'src/common/notification.service';
 
 @Module({
   imports: [
@@ -14,6 +15,6 @@ import { WebSocketController } from './web-socket.controller';
     MongooseModule.forFeature(modelDefinitions)
   ],
   controllers: [WebSocketController],
-  providers: [SocketGateway, WebSocketService,CommonService],
+  providers: [SocketGateway, WebSocketService,CommonService,NotificationService],
 })
 export class WebSocketModule {}

@@ -24,15 +24,7 @@ export class UserService {
 
     ) { }
 
-    async profile(user) {
-        try {
-            const response = new ResponseUserDto(user);
-            await validate(response, { whitelist: true });
-            return { data: response }
-        } catch (error) {
-            throw error
-        }
-    }
+    
 
     async update_profile(dto: UpdateUserDto, user) {
         try {
