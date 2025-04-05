@@ -101,6 +101,9 @@ export class ResponseUserDto {
   @IsBoolean()
   is_email_verified: boolean;
 
+  @IsString()
+  ride_id: string | Types.ObjectId;
+
   constructor(partial: Partial<ResponseUserDto>) {
     Object.assign(this, partial);
   }

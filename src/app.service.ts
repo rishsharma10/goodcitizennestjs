@@ -9,8 +9,9 @@ import { CommonService } from './common/common.service';
 import * as moment from 'moment';
 import { ForgotPassword, LoginDto, OtpDto, ResendOtp, ResetForgotPassword, ResponseUserDto, SignupDto, VerifyForgotPassword } from './user/dto/create-user.dto';
 import { validate } from 'class-validator';
-import { Query } from './common/utils';
+import { Query, RideStatus, UserType } from './common/utils';
 import { UpdateUserDto } from './user/dto/update-user.dto';
+import { DriverRide, DriverRideDocument } from './driver/entities/driver-ride.entity';
 
 @Injectable()
 export class AppService {
@@ -22,6 +23,7 @@ export class AppService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Session.name) private sessionModel: Model<SessionDocument>,
+    @InjectModel(DriverRide.name) private driverRideModel: Model<DriverRideDocument>,
     private commonService: CommonService,
     private jwtService: JwtService,
     private configService: ConfigService,
@@ -96,7 +98,13 @@ export class AppService {
 
   async profile(user) {
     try {
-      const response = new ResponseUserDto(user);
+      let userData = { ...user }
+      if (user.role === UserType.DRIVER) {
+        let query = { driver_id: new Types.ObjectId(user._id), status: RideStatus.STARTED }
+        let ride = await this.driverRideModel.findOne(query, { _id: 1 }, this.option);
+        userData = { ...user, ride_id: ride?._id ?? null }
+      }
+      const response = new ResponseUserDto(userData);
       await validate(response, { whitelist: true });
       return { data: response }
     } catch (error) {

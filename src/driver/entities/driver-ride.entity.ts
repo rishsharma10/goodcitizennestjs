@@ -28,6 +28,12 @@ export class DriverRide {
     @Prop({enum: RideStatus, default: RideStatus.PENDING })
     status: string;
     
+    @Prop()
+    pickup_address: string;
+
+    @Prop()
+    drop_address: string;
+
     @Prop({ default: null })
     created_at: number;
 }

@@ -2,10 +2,10 @@ import { Module } from '@nestjs/common';
 import { DriverService } from './driver.service';
 import { DriverController } from './driver.controller';
 import { MongooseModule } from '@nestjs/mongoose';
-import { modelDefinitions } from './entities';
+import { rideModelDefinitions } from './entities';
 
 @Module({
-  imports: [ MongooseModule.forFeature(modelDefinitions)],
+  imports: [ MongooseModule.forFeature(rideModelDefinitions)],
   controllers: [DriverController],
   providers: [DriverService],
 })

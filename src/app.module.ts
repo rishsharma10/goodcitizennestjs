@@ -15,6 +15,7 @@ import { CommonService } from './common/common.service';
 import { modelDefinitions } from './user/entities';
 import { commonModelDefinitions } from './entities';
 import { FirebaseModule } from 'nestjs-firebase';
+import { rideModelDefinitions } from './driver/entities';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -24,7 +25,7 @@ import { FirebaseModule } from 'nestjs-firebase';
         uri: configService.get<string>('DATABASE_URL'),
       }),
     }),
-    MongooseModule.forFeature([...modelDefinitions, ...commonModelDefinitions]),
+    MongooseModule.forFeature([...modelDefinitions, ...commonModelDefinitions,...rideModelDefinitions]),
     FirebaseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({

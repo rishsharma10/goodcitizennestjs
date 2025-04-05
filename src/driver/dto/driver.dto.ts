@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsObject } from "class-validator";
+import { IsNotEmpty, IsObject, IsString } from "class-validator";
 
 export class RideDto {
     @ApiProperty({
@@ -13,5 +13,22 @@ export class RideDto {
     })
     @IsObject()
     drop_location: { latitude: string; longitude: string };
+
+    @ApiProperty()
+    @IsNotEmpty({ message: 'pickup address is required' })
+    @IsString()
+    pickup_address: string;
+
+    @ApiProperty()
+    @IsNotEmpty({ message: 'drop address is required' })
+    @IsString()
+    drop_address: string;
 }
 
+
+export class ID {
+    @ApiProperty({ description: "Enter ride id here" })
+    @IsNotEmpty({ message: 'id is required' })
+    @IsString()
+    id: string;
+}
