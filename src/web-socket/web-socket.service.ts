@@ -152,7 +152,7 @@ export class WebSocketService {
             const validTokens = usersAheadTokens
             .filter(token => token?.fcm_token !== null)
             .map(token => token?.fcm_token);;
-            let message = "Driver is nearby";
+            let message = "Ambulane is nearby";
             let title = "Notification";
             await this.notificationService.send_notification(validTokens, message, title)
         } catch (error) {
