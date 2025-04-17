@@ -118,7 +118,7 @@ export class AppController {
     return await this.appService.profile(req.user);
   }
 
-  /**
+  /** 
    *  Will handle the user profile controller logic
    * @returns
    */

@@ -25,6 +25,7 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', name: 'authorization', in: 'header' }, 'authorization')
     .addServer(`http://localhost:3001/`, "local server")
+    .addServer(`https://goodcitizennestjs-1.onrender.com/`, "live server")
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
