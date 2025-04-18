@@ -18,7 +18,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(socket: CustomSocket, ...args: any[]) {
     try {
-      let token = socket.handshake.headers.authorization;
+      let token;
+      token = socket.handshake.headers.authorization;
       if(!token){
         token = socket.handshake.query.token;
       }
