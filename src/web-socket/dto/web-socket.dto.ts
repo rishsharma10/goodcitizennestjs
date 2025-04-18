@@ -12,3 +12,4 @@ export class LatLong {
   @IsString()
   long: string;
 }
+

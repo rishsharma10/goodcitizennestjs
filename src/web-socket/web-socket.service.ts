@@ -27,11 +27,11 @@ export class WebSocketService {
     async handleConnection(token: string, socket_id) {
         try {
             const decoded = await this.commonService.decodeToken(token);
-            const session = await this.sessionModel.findById({ _id: decoded.session_id }, {}, this.updateOption);
+            const session = await this.sessionModel.findById({ _id: new Types.ObjectId(decoded.session_id) }, {}, this.updateOption);
             if (!session) throw new UnauthorizedException();
             let user_id = session.user_id;
             let update = { is_online: true, socket_id }
-            let user = await this.userModel.findByIdAndUpdate({ _id: user_id }, update, this.option)
+            let user = await this.userModel.findByIdAndUpdate({ _id: new Types.ObjectId(user_id) }, update, this.option)
             if (!user) throw new UnauthorizedException();
             return user;
         } catch (error) {
@@ -51,24 +51,29 @@ export class WebSocketService {
 
     async save_coordinates(user: any, payload: LatLong): Promise<any> {
         try {
-            let { lat, long } = payload;
+            let { lat, long } = payload
             let query = { _id: new Types.ObjectId(user._id) }
             let location = {
                 type: "Point",
-                coordinates: [+long, +lat] // Note: MongoDB stores coordinates as [longitude, latitude]
+                coordinates: [parseFloat(long), parseFloat(lat)] // Note: MongoDB stores coordinates as [longitude, latitude]
             };
+
             // let direction = await this.calculatDirection(user.latitude, user.longitude, +lat, +long);
             let update = {
                 $set: {
                     pre_location: user?.location,
                     location,
-                    latitude: +lat,
-                    longitude: +long,
+                    latitude: parseFloat(lat),
+                    longitude: parseFloat(long),
                     // direction
                 }
             }
+            console.log(update, "update");
+
             return await this.userModel.findByIdAndUpdate(query, update, { new: true });
         } catch (error) {
+            console.log('erorooooo', error);
+
             throw error
         }
     }
@@ -150,8 +155,8 @@ export class WebSocketService {
 
             // Filter out null values
             const validTokens = usersAheadTokens
-            .filter(token => token?.fcm_token !== null)
-            .map(token => token?.fcm_token);;
+                .filter(token => token?.fcm_token !== null)
+                .map(token => token?.fcm_token);;
             let message = "Ambulane is nearby";
             let title = "Notification";
             await this.notificationService.send_notification(validTokens, message, title)
