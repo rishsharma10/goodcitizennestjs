@@ -61,7 +61,10 @@ export class CommonService {
 
   async decodeToken(access_token: string) {
     try {
-      // access_token = access_token.replace(/^Bearer\s+/i, '').trim();
+      access_token = access_token?.toLowerCase?.().startsWith('bearer ')
+      ? access_token.slice(7).trim()
+      : access_token;
+    
 
       let decode = await this.jwtService.verifyAsync(access_token, {
         secret: this.JWT_ACCESS_SECRET
