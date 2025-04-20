@@ -11,7 +11,8 @@ import { Query, UserType } from 'src/common/utils';
 import * as moment from 'moment';
 import { validate } from 'class-validator';
 import { Response } from 'express';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserDto, notification } from './dto/update-user.dto';
+import { Notification, NotificationDocument } from 'src/entities/notification.entity';
 
 @Injectable()
 export class UserService {
@@ -20,24 +21,23 @@ export class UserService {
     constructor(
         @InjectModel(User.name) private userModel: Model<UserDocument>,
         @InjectModel(Session.name) private sessionModel: Model<SessionDocument>,
+        @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
         private commonService: CommonService,
 
     ) { }
 
-    
 
-    async update_profile(dto: UpdateUserDto, user) {
+    async notification(dto: notification, user) {
         try {
-            const { email, old_password, new_password } = dto;
-            let update: Query = {}
-            if (email) {
-                let query = { email: email.toLowerCase(), is_deleted: false }
-                let projection = { email: 1 }
-                let isUser = await this.userModel.findOne(query, projection, this.option);
-                if (isUser) throw new BadRequestException("Email already exist");
-                update.email = email.toLowerCase()
-                update.is_email_verified = false
-            }
+            let { status, pagination, limit } = dto
+            let user_id = user._id
+            let setOptions = await this.commonService.setOptions(pagination, limit)
+            let query = { user_id: new Types.ObjectId(user_id) }
+            let options = { $limit: setOptions.limit, $skip: setOptions.skip }
+            let count = await this.notificationModel.countDocuments(query)
+            let notification = await this.notificationModel.find(query, {}, options).lean()
+            let data = { count, notification }
+            return data
         } catch (error) {
             throw error
         }

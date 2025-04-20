@@ -8,13 +8,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { CommonService } from 'src/common/common.service';
 import { WebSocketController } from './web-socket.controller';
 import { NotificationService } from 'src/common/notification.service';
+import { commonModelDefinitions } from 'src/entities';
+import { rideModelDefinitions } from 'src/driver/entities';
 
 @Module({
   imports: [
     JwtModule,
-    MongooseModule.forFeature(modelDefinitions)
+    MongooseModule.forFeature([...modelDefinitions, ...commonModelDefinitions, ...rideModelDefinitions]),
   ],
   controllers: [WebSocketController],
-  providers: [SocketGateway, WebSocketService,CommonService,NotificationService],
+  providers: [SocketGateway, WebSocketService, CommonService, NotificationService],
 })
-export class WebSocketModule {}
+export class WebSocketModule { }

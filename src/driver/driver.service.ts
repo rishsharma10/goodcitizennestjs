@@ -6,13 +6,15 @@ import { Model, Types } from 'mongoose';
 import { ResponseUserDto } from 'src/user/dto/create-user.dto';
 import { validate } from 'class-validator';
 import { RideStatus } from 'src/common/utils';
+import { Notification, NotificationDocument } from 'src/entities/notification.entity';
 
 @Injectable()
 export class DriverService {
   private options = { lean: true, sort: { _id: -1 } } as const;
   private newOptions = { new: true } as const;
   constructor(
-    @InjectModel(DriverRide.name) private driverRideModel: Model<DriverRideDocument>
+    @InjectModel(DriverRide.name) private driverRideModel: Model<DriverRideDocument>,
+    @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
   ) { }
 
   async profile(user) {
@@ -65,6 +67,7 @@ export class DriverService {
       }
       let update = { status: RideStatus.COMPLETED }
       let ride = await this.driverRideModel.findOneAndUpdate(query, update, this.newOptions);
+      await this.notificationModel.updateMany(query, update);
       if (!ride) return { message: "Ride not found" }
       return { message: "Ride Completed" }
     } catch (error) {

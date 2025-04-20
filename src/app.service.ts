@@ -47,7 +47,7 @@ export class AppService {
 
   async signup(dto: SignupDto): Promise<any> {
     try {
-      let { email, password } = dto
+      let { email, password, role } = dto
       let query = { email: email.toLowerCase(), is_deleted: false }
       let projection = { email: 1 }
       let isUser = await this.userModel.findOne(query, projection, this.option);
@@ -60,6 +60,7 @@ export class AppService {
         email: email.toLowerCase(),
         password: hashPassword,
         otp,
+        loyalty_point: role === UserType.USER ? 5 : 0,
         otp_expire_at: new Date(new Date().getTime() + 1 * 60000),
         created_at: moment().utc().valueOf()
       }
@@ -114,16 +115,31 @@ export class AppService {
 
   async update_profile(dto: UpdateUserDto, user) {
     try {
-      const { email, old_password, new_password } = dto;
+      const { old_password, new_password, first_name, last_name, phone_number, country_code } = dto;
       let update: Query = {}
-      if (email) {
-        let query = { email: email.toLowerCase(), is_deleted: false }
-        let projection = { email: 1 }
-        let isUser = await this.userModel.findOne(query, projection, this.option);
-        if (isUser) throw new BadRequestException("Email already exist");
-        update.email = email.toLowerCase()
-        update.is_email_verified = false
+      if (old_password && new_password) {
+        let is_password = await this.commonService.compareHash(old_password, user.password)
+        if (!is_password) throw new BadRequestException("Incorrect password");
+        let hashedPassword = await this.commonService.hashPassword(new_password)
+        update.password = hashedPassword
       }
+      if (first_name) {
+        update.first_name = first_name
+      }
+      if (last_name) {
+        update.last_name = last_name
+      }
+      if (country_code) {
+        update.country_code = country_code
+      }
+      if (phone_number) {
+        update.phone_number = phone_number
+      }
+      let query = { _id: user._id }
+      let result = await this.userModel.findByIdAndUpdate(query, update, { new: true }).lean()
+      const response = new ResponseUserDto(result ?? {});
+      await validate(response, { whitelist: true });
+      return { data: response }
     } catch (error) {
       throw error
     }
@@ -144,6 +160,8 @@ export class AppService {
       let projection = { email: 1, password: 1, role: 1, is_email_verified: 1 }
       let isUser = await this.userModel.findOne(query, projection, this.option);
       if (!isUser) throw new BadRequestException("User doesn't exist. Please sign-up.");
+      let is_password = await this.commonService.compareHash(password, isUser.password)
+      if (!is_password) throw new BadRequestException("Incorrect password");
       if (isUser.is_email_verified === false) {
         let access_token = await this.commonService.generateTempToken(isUser._id, isUser.email, isUser.role)
         await this.generate_otp(isUser._id);

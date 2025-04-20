@@ -1,22 +1,31 @@
-import { ApiProperty, PartialType } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, IsStrongPassword, Length } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsEnum, IsOptional, IsString, IsStrongPassword, Length } from 'class-validator';
+import { RideStatus } from 'src/common/utils';
 
 export class UpdateUserDto {
-    @ApiProperty({ default: "john@yopmail.com" })
-    @IsEmail({}, { message: 'Email must be an valid email address' })
+    @ApiProperty()
+    @IsString()
     @IsOptional()
-    email: string;
+    first_name: string;
+
+    @ApiProperty()
+    @IsString()
+    @IsOptional()
+    last_name: string;
+
+    @ApiProperty()
+    @IsString()
+    @IsOptional()
+    country_code: string;
+
+    @ApiProperty()
+    @IsString()
+    @IsOptional()
+    phone_number: string;
 
     @ApiProperty()
     @Length(8, 20, { message: 'Password must be between 8 and 20 characters long' })
     @IsOptional()
-    @IsStrongPassword({
-        minLength: 6,
-        minLowercase: 1,
-        minNumbers: 1,
-        minSymbols: 1,
-        minUppercase: 1
-    })
     @IsString()
     old_password: string;
 
@@ -32,4 +41,21 @@ export class UpdateUserDto {
     })
     @IsString()
     new_password: string;
+}
+
+export class notification {
+    @ApiProperty()
+    @IsString()
+    @IsEnum(RideStatus)
+    status: string;
+
+    @ApiProperty({ required: false })
+    @IsString()
+    @IsOptional()
+    pagination: string;
+
+    @ApiProperty({ required: false })
+    @IsString()
+    @IsOptional()
+    limit: string;
 }

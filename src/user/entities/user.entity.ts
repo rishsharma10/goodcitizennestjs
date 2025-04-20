@@ -1,12 +1,12 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument } from "mongoose";
-import  * as moment from "moment";
+import * as moment from "moment";
 import { DIRECTION, UserType } from "../../common/utils";
 
 class Point {
     @Prop({ type: String, enum: ['Point'], default: 'Point' })
     type: string;
-  
+
     @Prop({ type: [Number], required: true, default: [0, 0] }) // Ensure coordinates are always an array
     coordinates: number[];
 }
@@ -14,14 +14,20 @@ class Point {
 @Schema({ versionKey: false })
 export class User {
 
-    // @Prop({ required: true, type: String })
-    // first_name: string;
+    @Prop({ type: String })
+    first_name: string;
 
-    // @Prop({ required: true, type: String })
-    // last_name: string;
+    @Prop({ type: String })
+    last_name: string;
 
-    @Prop({ required: true, type: String })
+    @Prop({ type: String })
     email: string;
+
+    @Prop({ type: String })
+    country_code: string;
+
+    @Prop({ type: String })
+    phone_number: string;
 
     @Prop({ required: true, type: String })
     password: string;
@@ -43,7 +49,7 @@ export class User {
 
     @Prop({ type: Boolean, default: false })
     is_email_verified: boolean;
-    
+
     @Prop({ type: Point, required: true, default: { type: 'Point', coordinates: [0, 0] } })
     location: Point;
 
@@ -61,6 +67,9 @@ export class User {
 
     @Prop({ type: String })
     socket_id: string;
+
+    @Prop({ type: Number })
+    loyalty_point: number;
 
     @Prop({ default: moment().utc().valueOf() })
     created_at: number;

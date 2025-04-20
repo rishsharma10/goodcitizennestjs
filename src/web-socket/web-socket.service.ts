@@ -107,6 +107,7 @@ export class WebSocketService {
 
     async findUsersAhead(
         driver_id: string,
+        ride_id: string,
         lat: number,
         long: number,
         bearing: number, // Driver's movement angle
@@ -156,10 +157,13 @@ export class WebSocketService {
             // Filter out null values
             const validTokens = usersAheadTokens
                 .filter(token => token?.fcm_token !== null)
-                .map(token => token?.fcm_token);;
+                .map(token => ({
+                    fcm_token: token?.fcm_token,
+                    user_id: token?.user_id
+                }));
             let message = "Ambulane is nearby";
             let title = "Notification";
-            await this.notificationService.send_notification(validTokens, message, title)
+            await this.notificationService.send_notification(validTokens, message, title, driver_id, ride_id)
         } catch (error) {
             throw error
         }

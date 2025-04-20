@@ -1,7 +1,7 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect, MessageBody } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { WebSocketService } from './web-socket.service';
-import { LatLong } from './dto/web-socket.dto';
+import { DriverLatLong, LatLong } from './dto/web-socket.dto';
 import { Types } from 'mongoose';
 import { UnauthorizedException } from '@nestjs/common';
 
@@ -57,11 +57,11 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage("driver_location")
-  async driver_location(socket: CustomSocket, payload: LatLong) {
+  async driver_location(socket: CustomSocket, payload: DriverLatLong) {
     try {
       let user = socket.user; 
       let driver = await this.webSocketService.save_coordinates(user, payload);
-      await this.webSocketService.findUsersAhead(driver._id, driver?.latitude,
+      await this.webSocketService.findUsersAhead(driver._id,payload.ride_id, driver?.latitude,
         driver?.longitude, driver?.direction, 1);
     } catch (error) {
       throw error

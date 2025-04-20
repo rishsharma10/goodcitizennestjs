@@ -24,7 +24,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     async validate(payload: any) {
         const query = { _id: payload._id, is_deleted: false }
-        let projection = { password: 0 }
+        let projection = {  }
         let option = { lean: true }
         const user = await this.userModel.findById(query, projection, option);
         if (!user) return null;

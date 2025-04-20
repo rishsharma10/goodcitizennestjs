@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsString, IsStrongPassword, Length, MinLength } from "class-validator";
+import { IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsNumber, IsString, IsStrongPassword, Length, MinLength } from "class-validator";
 import { Device_TYPE, UserType } from "../../common/utils";
 import { Types } from "mongoose";
 
@@ -71,7 +71,7 @@ export class OtpDto {
 
 export class ResponseUserDto {
   @IsString()
-  _id: string | Types.ObjectId;;
+  _id: string | Types.ObjectId;
 
   @IsString()
   first_name: string;
@@ -80,10 +80,16 @@ export class ResponseUserDto {
   last_name: string;
 
   @IsString()
-  full_name: string;
+  country_code: string;
+
+  @IsString()
+  phone_number: string;
 
   @IsString()
   company_name: string;
+
+  @IsNumber()
+  loyalty_point: number;
 
   @IsString()
   @IsEmail()

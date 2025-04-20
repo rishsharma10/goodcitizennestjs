@@ -1,26 +1,45 @@
 import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, Types } from "mongoose";
 import { FirebaseAdmin, InjectFirebaseAdmin } from "nestjs-firebase";
+import { Notification, NotificationDocument } from "src/entities/notification.entity";
+import { LoyaltyPoint, LoyaltyPointDocument } from "src/user/entities/loyalty-point.entity";
+import { User, UserDocument } from "src/user/entities/user.entity";
+import { RideStatus } from "./utils";
 
 
 @Injectable()
 export class NotificationService {
-    constructor(@InjectFirebaseAdmin() private firebase: FirebaseAdmin) { }
+    private option = { lean: true, sort: { _id: -1 } } as const;
 
-    async send_notification(tokens: (string | undefined)[], message: string, title: string = 'Notification') {
+    constructor(
+        @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
+        @InjectModel(LoyaltyPoint.name) private loyaltyPointModel: Model<LoyaltyPointDocument>,
+        @InjectModel(User.name) private userModel: Model<UserDocument>,
+        @InjectFirebaseAdmin() private firebase: FirebaseAdmin,
+    ) { }
+
+    async send_notification(
+        tokens: any,
+        message: string,
+        title: string = 'Notification',
+        driver_id: string,
+        ride_id: string
+    ) {
         try {
-            // Remove duplicates and ensure we have an array
-            const uniqueTokens = [...new Set(tokens)];
-            // Firebase has a limit of 500 tokens per multicast
             const chunkSize = 500;
-            // Prepare notification payload
             const payload = {
-                title: title,
-                body: message
+                title,
+                body: message,
             };
 
-            // Split tokens into chunks of 500
-            for (let i = 0; i < uniqueTokens.length; i += chunkSize) {
-                const tokenChunk = uniqueTokens.slice(i, i + chunkSize);
+            const now = Date.now();
+            const notificationsToSave: Partial<Notification>[] = [];
+
+            for (let i = 0; i < tokens.length; i += chunkSize) {
+                const tokenChunk = tokens.slice(i, i + chunkSize);
+
+                const fcmTokens = tokenChunk.map(t => t.fcm_token);
 
                 const messagePayload = {
                     notification: payload,
@@ -30,18 +49,63 @@ export class NotificationService {
                             renotify: false,
                         },
                     },
-                    tokens: tokenChunk,
-                } as any;
+                    tokens: fcmTokens,
+                };
 
-                // Send notification to current chunk
-                this.firebase.messaging.sendEachForMulticast(messagePayload);
+                const response = await this.firebase.messaging.sendEachForMulticast(messagePayload);
+
+                response.responses.forEach((res, index) => {
+                    if (res.success) {
+                        const { user_id } = tokenChunk[index];
+
+                        notificationsToSave.push({
+                            user_id: new Types.ObjectId(user_id),
+                            driver_id: new Types.ObjectId(driver_id),
+                            message,
+                            status: RideStatus.STARTED,
+                            created_at: now,
+                        });
+
+                        this.loyalty_point(user_id, driver_id, ride_id)
+                    }
+                });
             }
 
-            // Wait for all notification batches to complete
-            return
+            if (notificationsToSave.length > 0) {
+                await this.notificationModel.insertMany(notificationsToSave);
+            }
+
+            return;
         } catch (error) {
             console.error('Error sending notifications:', error);
             throw error;
         }
     }
+
+    async loyalty_point(user_id: string, driver_id: string, ride_id: string) {
+        try {
+            let query = {
+                user_id: new Types.ObjectId(user_id),
+                driver_id: new Types.ObjectId(driver_id),
+                ride_id: new Types.ObjectId(ride_id),
+            }
+            let point = await this.loyaltyPointModel.findOne(query, {}, this.option);
+            if (!point) {
+                let data = {
+                    user_id: new Types.ObjectId(user_id),
+                    driver_id: new Types.ObjectId(driver_id),
+                    ride_id: new Types.ObjectId(ride_id),
+                    loyalty_point: 5
+                }
+                await this.loyaltyPointModel.create(data)
+                await this.userModel.findByIdAndUpdate(
+                    { _id: new Types.ObjectId(user_id) },
+                    { $set: { loyalty_point: { $inc: 5 } } }
+                )
+            }
+        } catch (error) {
+            throw error
+        }
+    }
+
 }

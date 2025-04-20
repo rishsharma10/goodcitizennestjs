@@ -8,13 +8,25 @@ import { TempAuthGuard } from 'src/authentication/guards/temp-auth.guard';
 import { RolesGuard } from 'src/authentication/guards/roles.guard';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/authentication/guards/jwt-auth.guard';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { notification } from './dto/update-user.dto';
 
 @Controller({ path: 'user', version: '1' })
 export class UserController {
   constructor(private readonly userService: UserService) { }
 
-  
+    /** 
+   *  Will handle the user profile controller logic
+   * @returns
+   */
+    @ApiBearerAuth("authorization")
+    @Roles(UserType.USER)
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Get('notification')
+    @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
+    @ApiOperation({ summary: `User notification Api` })
+    async edit_profile(@Body() dto: notification, @Req() req) {
+      return await this.userService.notification(dto,req.user);
+    }
 
  
 }
