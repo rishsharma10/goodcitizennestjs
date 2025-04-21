@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query,Patch, Param, Delete, UseGuards, Req, Res } from '@nestjs/common';
 import { UserService } from './user.service';
 import { LoginDto, OtpDto, SignupDto } from './dto/create-user.dto';
 import { ApiBearerAuth, ApiConsumes, ApiOperation } from '@nestjs/swagger';
@@ -24,7 +24,7 @@ export class UserController {
     @Get('notification')
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @ApiOperation({ summary: `User notification Api` })
-    async edit_profile(@Body() dto: notification, @Req() req) {
+    async edit_profile(@Query() dto: notification, @Req() req) {
       return await this.userService.notification(dto,req.user);
     }
 
