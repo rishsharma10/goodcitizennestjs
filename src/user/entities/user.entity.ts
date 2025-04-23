@@ -14,10 +14,10 @@ class Point {
 @Schema({ versionKey: false })
 export class User {
 
-    @Prop({ type: String })
+    @Prop({ type: String, default: null })
     first_name: string;
 
-    @Prop({ type: String })
+    @Prop({ type: String, default: null })
     last_name: string;
 
     @Prop({ type: String })

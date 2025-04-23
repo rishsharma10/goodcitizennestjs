@@ -102,8 +102,11 @@ export class AppService {
       let userData = { ...user }
       if (user.role === UserType.DRIVER) {
         let query = { driver_id: new Types.ObjectId(user._id), status: RideStatus.STARTED }
-        let ride = await this.driverRideModel.findOne(query, { _id: 1 }, this.option);
-        userData = { ...user, ride_id: ride?._id ?? null }
+        let ride = await this.driverRideModel.findOne(query, {}, this.option);
+        let distance = ride ?
+          await this.calculateDistance(ride.pickup_location, ride?.drop_location) :
+          null;
+        userData = { ...user, ride_id: ride?._id ?? null, distance }
       }
       const response = new ResponseUserDto(userData);
       await validate(response, { whitelist: true });
@@ -112,6 +115,40 @@ export class AppService {
       throw error
     }
   }
+
+  async calculateDistance(
+    pickup_location: { latitude: number; longitude: number },
+    drop_location: { latitude: number; longitude: number }
+  ): Promise<number> {
+    try {
+      console.log("pickup_location", pickup_location);
+      console.log("drop_location", drop_location);
+
+      const lat1 = pickup_location.latitude;
+      const lon1 = pickup_location.longitude;
+      const lat2 = drop_location.latitude;
+      const lon2 = drop_location.longitude;
+
+      const toRad = (value: number) => (value * Math.PI) / 180;
+
+      const R = 6371; // Radius of the Earth in km
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) ** 2;
+
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const distance = R * c;
+
+      return distance; // in kilometers
+    } catch (error) {
+      throw error
+    }
+  }
+
 
   async update_profile(dto: UpdateUserDto, user) {
     try {

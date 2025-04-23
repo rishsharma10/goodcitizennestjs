@@ -15,7 +15,7 @@ export class UserController {
   constructor(private readonly userService: UserService) { }
 
     /** 
-   *  Will handle the user profile controller logic
+   *  Will handle the user notification controller logic
    * @returns
    */
     @ApiBearerAuth("authorization")

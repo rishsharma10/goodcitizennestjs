@@ -110,6 +110,9 @@ export class ResponseUserDto {
   @IsString()
   ride_id: string | Types.ObjectId;
 
+  @IsNumber()
+  distance: number | null;
+
   constructor(partial: Partial<ResponseUserDto>) {
     Object.assign(this, partial);
   }
