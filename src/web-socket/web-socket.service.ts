@@ -112,7 +112,7 @@ export class WebSocketService {
 
     async findUsersAhead(
         driver_id: string,
-        ride_id: string,
+        ride_id: string|Types.ObjectId,
         lat: number,
         long: number,
         bearing: number, // Driver's movement angle

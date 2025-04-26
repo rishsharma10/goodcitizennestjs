@@ -24,7 +24,7 @@ export class NotificationService {
         message: string,
         title: string = 'Notification',
         driver_id: string,
-        ride_id: string
+        ride_id: string | Types.ObjectId
     ) {
         try {
             console.log("tokens---", tokens);
@@ -89,7 +89,7 @@ export class NotificationService {
         }
     }
 
-    async loyalty_point(user_id: string, driver_id: string, ride_id: string) {
+    async loyalty_point(user_id: string, driver_id: string, ride_id: string|Types.ObjectId) {
         try {
             let query = {
                 user_id: new Types.ObjectId(user_id),
