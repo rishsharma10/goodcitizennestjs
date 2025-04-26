@@ -68,8 +68,10 @@ export class NotificationService {
                             created_at: new Date(),
                         };
 
-                        this.loyalty_point(user_id, driver_id, ride_id)
                         this.notificationModel.create(save_notify)
+                        console.log("save_notify",save_notify);
+                        
+                        this.loyalty_point(user_id, driver_id, ride_id)
                     }
                 });
             }
