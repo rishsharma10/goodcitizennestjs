@@ -156,7 +156,10 @@ export class WebSocketService {
 
                     // Users are ahead if they are within a 60° cone in front of the driver
                     const directionDifference = this.getAngleDifference(userBearing, bearing);
-
+                    console.log(`driverBearing`,bearing);
+                    console.log(`userBearing ${user._id}`,userBearing);
+                    console.log(`directionDifference`,directionDifference);
+                    
                     return directionDifference <= 60 ? token : null;
                 })
             );
