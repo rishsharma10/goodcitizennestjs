@@ -180,7 +180,7 @@ export class WebSocketService {
             console.log("validTokens", validTokens);
 
             let message = "An ambulane is coming. Please move aside";
-            let title = "Notification";
+            let title = "Good Citizen Alert";
             await this.notificationService.send_notification(validTokens, message, title, driver_id, ride_id)
         } catch (error) {
             throw error

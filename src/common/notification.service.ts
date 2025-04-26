@@ -22,7 +22,7 @@ export class NotificationService {
     async send_notification(
         tokens: any,
         message: string,
-        title: string = 'Notification',
+        title: string,
         driver_id: string,
         ride_id: string | Types.ObjectId
     ) {
