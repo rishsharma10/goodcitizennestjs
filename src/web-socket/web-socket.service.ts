@@ -141,8 +141,8 @@ export class WebSocketService {
 
             const usersAheadTokens = await Promise.all(
                 users.map(async user => {
-                    console.log("user----",user);
-                    
+                    console.log("user----", user);
+
                     if (!user.pre_location || !Array.isArray(user.pre_location.coordinates)) return null;
 
                     const [prevLong, prevLat] = user.pre_location.coordinates;
@@ -155,6 +155,7 @@ export class WebSocketService {
                     return directionDifference <= 60 ? token : null;
                 })
             );
+            console.log("usersAheadTokens", usersAheadTokens);
 
             // Filter out null values
             const validTokens = usersAheadTokens
@@ -163,6 +164,9 @@ export class WebSocketService {
                     fcm_token: token?.fcm_token,
                     user_id: token?.user_id
                 }));
+
+            console.log("validTokens", validTokens);
+
             let message = "Ambulane is nearby";
             let title = "Notification";
             await this.notificationService.send_notification(validTokens, message, title, driver_id, ride_id)
