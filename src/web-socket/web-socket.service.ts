@@ -59,7 +59,7 @@ export class WebSocketService {
             };
 
             // let direction = await this.calculatDirection(user.latitude, user.longitude, +lat, +long);
-            let driverBearing  = await this.calculateBearing(user.latitude, user.longitude, +lat, +long);
+            let driverBearing = await this.calculateBearing(user.latitude, user.longitude, +lat, +long);
             let update = {
                 $set: {
                     pre_location: user?.location ||
@@ -112,11 +112,12 @@ export class WebSocketService {
 
     async findUsersAhead(
         driver_id: string,
-        ride_id: string|Types.ObjectId,
+        ride_id: string | Types.ObjectId,
         lat: number,
         long: number,
         bearing: number, // Driver's movement angle
-        radiusInKm: number
+        radiusInKm: number,
+        is_first: boolean,
     ) {
         try {
             const radiusInRadians = radiusInKm / 6378.1; // Convert km to radians
@@ -156,10 +157,13 @@ export class WebSocketService {
 
                     // Users are ahead if they are within a 60° cone in front of the driver
                     const directionDifference = this.getAngleDifference(userBearing, bearing);
-                    console.log(`driverBearing`,bearing);
-                    console.log(`userBearing ${user._id}`,userBearing);
-                    console.log(`directionDifference`,directionDifference);
-                    
+                    console.log(`driverBearing`, bearing);
+                    console.log(`userBearing ${user._id}`, userBearing);
+                    console.log(`directionDifference`, directionDifference);
+
+                    if (is_first) {
+                        return token;
+                    }
                     return directionDifference <= 120 ? token : null;
                 })
             );

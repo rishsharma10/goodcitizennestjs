@@ -5,10 +5,18 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { rideModelDefinitions } from './entities';
 import { modelDefinitions } from 'src/user/entities';
 import { commonModelDefinitions } from 'src/entities';
+import { WebSocketService } from 'src/web-socket/web-socket.service';
+import { JwtModule } from '@nestjs/jwt';
+import { CommonService } from 'src/common/common.service';
+import { NotificationService } from 'src/common/notification.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([...rideModelDefinitions, ...modelDefinitions, ...commonModelDefinitions])],
+  imports: [
+    JwtModule,
+    MongooseModule.forFeature([...rideModelDefinitions, ...modelDefinitions, ...commonModelDefinitions]
+
+    )],
   controllers: [DriverController],
-  providers: [DriverService],
+  providers: [DriverService, WebSocketService,CommonService,NotificationService],
 })
 export class DriverModule { }

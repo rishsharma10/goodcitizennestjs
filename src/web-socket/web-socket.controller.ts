@@ -20,6 +20,6 @@ export class WebSocketController {
   async findUsersAhead(@Query() payload: DriverLatLong,@Req() req) {
   let driver = await this.webSocketService.save_coordinates(req.user._id, payload);
   return  await this.webSocketService.findUsersAhead(driver._id,driver.ride_id,driver?.latitude,
-    driver?.longitude,driver?.direction,2);
+    driver?.longitude,driver?.direction,2, false);
   }  
 }  
