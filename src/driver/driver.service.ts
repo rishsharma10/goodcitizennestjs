@@ -75,7 +75,7 @@ export class DriverService {
       let ride = await this.driverRideModel.findOneAndUpdate(query, update, this.newOptions);
       await this.notificationModel.updateMany(query, update);
       if (!ride) return { message: "Ride not found" }
-      return { message: "Ride Completed" }
+      return { message: "Your Ride ends here. Thank you for tarveling with us!" }
     } catch (error) {
       throw error
     }

@@ -179,7 +179,7 @@ export class WebSocketService {
 
             console.log("validTokens", validTokens);
 
-            let message = "Ambulane is nearby";
+            let message = "An ambulane is coming. Please move aside";
             let title = "Notification";
             await this.notificationService.send_notification(validTokens, message, title, driver_id, ride_id)
         } catch (error) {
