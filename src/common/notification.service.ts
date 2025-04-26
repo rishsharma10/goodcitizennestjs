@@ -27,6 +27,8 @@ export class NotificationService {
         ride_id: string
     ) {
         try {
+            console.log("tokens---", tokens);
+            
             const chunkSize = 500;
             const payload = {
                 title,
