@@ -74,6 +74,8 @@ export class NotificationService {
             }
 
             if (notificationsToSave.length > 0) {
+                console.log(notificationsToSave,"notificationsToSave");
+                
                 await this.notificationModel.insertMany(notificationsToSave, { ordered: false });
             }
 
