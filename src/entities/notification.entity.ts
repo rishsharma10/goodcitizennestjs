@@ -1,9 +1,9 @@
-import { Prop, SchemaFactory } from "@nestjs/mongoose";
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { HydratedDocument, Types } from "mongoose";
 import { RideStatus } from "src/common/utils";
 import { User } from "src/user/entities/user.entity";
 
-
+@Schema()
 export class Notification {
 
     @Prop({ type: Types.ObjectId, ref: User.name })
@@ -18,7 +18,7 @@ export class Notification {
     @Prop({ default: RideStatus.STARTED })
     status: string;
 
-    @Prop({ default: null })
+    @Prop({ default: Date.now() })
     created_at: Date;
 }
 
