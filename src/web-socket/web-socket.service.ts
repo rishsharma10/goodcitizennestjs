@@ -58,10 +58,15 @@ export class WebSocketService {
                 coordinates: [parseFloat(long), parseFloat(lat)] // Note: MongoDB stores coordinates as [longitude, latitude]
             };
 
-            let direction = await this.calculatDirection(user.latitude, user.longitude, +lat, +long);
+            // let direction = await this.calculatDirection(user.latitude, user.longitude, +lat, +long);
+            let driverBearing  = await this.calculateBearing(user.latitude, user.longitude, +lat, +long);
             let update = {
                 $set: {
-                    pre_location: user?.location,
+                    pre_location: user?.location ||
+                    {
+                        type: "Point",
+                        coordinates: [parseFloat(user.longitude), parseFloat(user.latitude)]
+                    },
                     location,
                     latitude: parseFloat(lat),
                     longitude: parseFloat(long),
@@ -70,7 +75,7 @@ export class WebSocketService {
             }
             console.log(update, "update");
             let getUser = await this.userModel.findByIdAndUpdate(query, update, { new: true });
-            return { driver: getUser, direction }
+            return { driver: getUser, driverBearing }
         } catch (error) {
             console.log('erorooooo', error);
 
