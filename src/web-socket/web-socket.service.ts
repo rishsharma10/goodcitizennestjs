@@ -141,6 +141,8 @@ export class WebSocketService {
 
             const usersAheadTokens = await Promise.all(
                 users.map(async user => {
+                    console.log("user----",user);
+                    
                     if (!user.pre_location || !Array.isArray(user.pre_location.coordinates)) return null;
 
                     const [prevLong, prevLat] = user.pre_location.coordinates;
