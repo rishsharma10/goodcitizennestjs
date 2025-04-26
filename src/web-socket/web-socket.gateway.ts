@@ -20,13 +20,13 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       let token;
       token = socket.handshake.headers.token;
-      if(!token){
+      if (!token) {
         token = socket.handshake.query.token;
       }
       if (!token) throw new UnauthorizedException();
       let user = await this.webSocketService.handleConnection(token, socket.id);
       if (!user) throw new UnauthorizedException();
-      socket.user = user; 
+      socket.user = user;
       this.activeUsers.set((user._id).toString(), socket);
     } catch (error) {
       throw error
@@ -59,10 +59,10 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("driver_location")
   async driver_location(socket: CustomSocket, payload: DriverLatLong) {
     try {
-      let user = socket.user; 
-      let driver = await this.webSocketService.save_coordinates(user, payload);
-      await this.webSocketService.findUsersAhead(driver._id,payload.ride_id, driver?.latitude,
-        driver?.longitude, driver?.direction, 1);
+      let user = socket.user;
+      let { driver, direction } = await this.webSocketService.save_coordinates(user, payload);
+      await this.webSocketService.findUsersAhead(driver._id, payload.ride_id, driver?.latitude,
+        driver?.longitude, direction, 5);
     } catch (error) {
       throw error
     }
