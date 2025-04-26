@@ -160,7 +160,7 @@ export class WebSocketService {
                     console.log(`userBearing ${user._id}`,userBearing);
                     console.log(`directionDifference`,directionDifference);
                     
-                    return directionDifference <= 60 ? token : null;
+                    return directionDifference <= 120 ? token : null;
                 })
             );
             console.log("usersAheadTokens", usersAheadTokens);
