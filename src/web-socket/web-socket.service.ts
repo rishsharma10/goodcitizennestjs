@@ -147,7 +147,7 @@ export class WebSocketService {
 
                     const [prevLong, prevLat] = user.pre_location.coordinates;
                     const userBearing = this.calculateBearing(prevLat, prevLong, user.latitude, user.longitude);
-                    const token = await this.sessionModel.findById({ user_id: user._id }).lean();
+                    const token = await this.sessionModel.findOne({ user_id: user._id }).lean();
 
                     // Users are ahead if they are within a 60° cone in front of the driver
                     const directionDifference = this.getAngleDifference(userBearing, bearing);
