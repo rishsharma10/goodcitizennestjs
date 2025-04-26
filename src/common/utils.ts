@@ -1,3 +1,5 @@
+import { Types } from "mongoose";
+
 export enum UserType {
   USER = 'USER',
   ADMIN = 'ADMIN',
@@ -28,5 +30,5 @@ export enum DIRECTION {
 }
 
 export interface Query {
-  [key: string]: string | boolean;
+  [key: string]: string | boolean| Types.ObjectId;
 }

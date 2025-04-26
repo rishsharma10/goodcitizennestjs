@@ -24,7 +24,7 @@ export class UserController {
     @Get('notification')
     @ApiConsumes('application/json', 'application/x-www-form-urlencoded')
     @ApiOperation({ summary: `User notification Api` })
-    async edit_profile(@Query() dto: notification, @Req() req) {
+    async notification(@Query() dto: notification, @Req() req) {
       return await this.userService.notification(dto,req.user);
     }
 

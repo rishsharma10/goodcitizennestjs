@@ -32,10 +32,13 @@ export class UserService {
             let { status, pagination, limit } = dto
             let user_id = user._id
             let setOptions = await this.commonService.setOptions(pagination, limit)
-            let query = { user_id: new Types.ObjectId(user_id) }
-            let options = { $limit: setOptions.limit, $skip: setOptions.skip }
+            let query:Query = { user_id: new Types.ObjectId(user_id) }
             let count = await this.notificationModel.countDocuments(query)
-            let notification = await this.notificationModel.find(query, {}, options).lean()
+            if(status){
+                query.status = status
+            }
+            let population =[{ path: "driver_id", select: "first_name last_name email" }];
+            let notification = await this.notificationModel.find(query, {}, setOptions).populate(population)
             let data = { count, notification }
             return data
         } catch (error) {
