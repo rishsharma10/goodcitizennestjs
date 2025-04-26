@@ -164,7 +164,7 @@ export class WebSocketService {
                     if (is_first) {
                         return token;
                     }
-                    return directionDifference <= 120 ? token : null;
+                    return directionDifference <= 180 ? token : null;
                 })
             );
             console.log("usersAheadTokens", usersAheadTokens);
