@@ -28,7 +28,7 @@ export class NotificationService {
     ) {
         try {
             console.log("tokens---", tokens);
-            
+
             const chunkSize = 500;
             const payload = {
                 title,
@@ -65,7 +65,7 @@ export class NotificationService {
                             driver_id: new Types.ObjectId(driver_id),
                             message,
                             status: RideStatus.STARTED,
-                            created_at: now,
+                            created_at: new Date(),
                         });
 
                         this.loyalty_point(user_id, driver_id, ride_id)
@@ -74,7 +74,7 @@ export class NotificationService {
             }
 
             if (notificationsToSave.length > 0) {
-                await this.notificationModel.insertMany(notificationsToSave);
+                await this.notificationModel.insertMany(notificationsToSave, { ordered: false });
             }
 
             return;
@@ -102,7 +102,7 @@ export class NotificationService {
                 await this.loyaltyPointModel.create(data)
                 await this.userModel.findByIdAndUpdate(
                     { _id: new Types.ObjectId(user_id) },
-                    { $set: { loyalty_point: { $inc: 5 } } }
+                    { $inc: { loyalty_point: 5 } },
                 )
             }
         } catch (error) {

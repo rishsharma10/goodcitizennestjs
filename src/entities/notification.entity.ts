@@ -19,7 +19,7 @@ export class Notification {
     status: string;
 
     @Prop({ default: null })
-    created_at: number;
+    created_at: Date;
 }
 
 export type NotificationDocument = HydratedDocument<Notification>
