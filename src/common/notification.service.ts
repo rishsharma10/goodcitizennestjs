@@ -60,24 +60,25 @@ export class NotificationService {
                     if (res.success) {
                         const { user_id } = tokenChunk[index];
 
-                        notificationsToSave.push({
+                        let save_notify = {
                             user_id: new Types.ObjectId(user_id),
                             driver_id: new Types.ObjectId(driver_id),
                             message,
                             status: RideStatus.STARTED,
                             created_at: new Date(),
-                        });
+                        };
 
                         this.loyalty_point(user_id, driver_id, ride_id)
+                        this.notificationModel.create(save_notify)
                     }
                 });
             }
 
-            if (notificationsToSave.length > 0) {
-                console.log(notificationsToSave,"notificationsToSave");
-                
-                await this.notificationModel.insertMany(notificationsToSave, { ordered: false });
-            }
+            // if (notificationsToSave.length > 0) {
+            //     console.log(notificationsToSave,"notificationsToSave");
+
+            //     // await this.notificationModel.insertMany(notificationsToSave, { ordered: false });
+            // }
 
             return;
         } catch (error) {
