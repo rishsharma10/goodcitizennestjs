@@ -61,7 +61,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       let user = socket.user;
       let { driver, driverBearing } = await this.webSocketService.save_coordinates(user, payload);
-      await this.webSocketService.findUsersAhead(driver._id, payload.ride_id, driver?.latitude,
+      await this.webSocketService.findUsersAheadBox(driver._id, payload.ride_id, driver?.latitude,
         driver?.longitude, driverBearing, 5,false);
     } catch (error) {
       throw error
