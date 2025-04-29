@@ -280,7 +280,6 @@ async findUsersAheadBox(
         const rightFront = await this.getDestinationLatLng(frontCenter.lat, frontCenter.lng, bearing + 90, halfWidth);
         const leftBack =await this.getDestinationLatLng(lat, long, bearing - 90, halfWidth);
         const rightBack = await this.getDestinationLatLng(lat, long, bearing + 90, halfWidth);
-
         // Create polygon for MongoDB query
         const polygon = [
             [leftBack.lng, leftBack.lat],
@@ -289,6 +288,10 @@ async findUsersAheadBox(
             [rightBack.lng, rightBack.lat],
             [leftBack.lng, leftBack.lat] // Close the polygon
         ];
+        console.log('====================================',lat);
+        console.log('====================================',long);
+        console.log('====================================',bearing);
+        console.log('====================================',polygon);
 
         const query = {
             _id: { $ne: new Types.ObjectId(driver_id) },
