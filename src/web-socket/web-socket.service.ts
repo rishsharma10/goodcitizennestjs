@@ -321,7 +321,8 @@ async findUsersAheadBox(
                 const directionDifference = this.getAngleDifference(userBearing, bearing);
         
                 const token = await this.sessionModel.findOne({ user_id: user._id }).lean();
-        
+                console.log("user",user)
+                
                 const maxAllowedDirectionDiff = 35; // degrees
                 console.log("directionDifference",directionDifference)
                 if (directionDifference <= maxAllowedDirectionDiff) {
