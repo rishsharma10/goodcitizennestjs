@@ -325,6 +325,7 @@ async findUsersAheadBox(
                 const maxAllowedDirectionDiff = 35; // degrees
                 console.log("directionDifference",directionDifference)
                 if (directionDifference <= maxAllowedDirectionDiff) {
+                    console.log("session",token)
                     return token;
                 }
         
