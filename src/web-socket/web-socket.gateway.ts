@@ -50,7 +50,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("save_location")
   async save_lat_long(socket: CustomSocket, payload: LatLong) {
     try {
-      await this.webSocketService.save_coordinates(socket.user, payload)
+      let user= socket.user
+      console.log("save_lat_long",user)
+      await this.webSocketService.save_coordinates(user, payload)
     } catch (error) {
       throw error
     }
@@ -60,6 +62,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async driver_location(socket: CustomSocket, payload: DriverLatLong) {
     try {
       let user = socket.user;
+      console.log("driver_location",user)
       let { driver, driverBearing } = await this.webSocketService.save_coordinates(user, payload);
       await this.webSocketService.findUsersAheadBox(driver._id, payload.ride_id, driver?.latitude,
         driver?.longitude, driverBearing, 5,false);
