@@ -317,7 +317,7 @@ async findUsersAheadBox(
                     user.latitude,
                     user.longitude
                 );
-        
+                console.log('===userBearing',userBearing);
                 const directionDifference = await this.getAngleDifference(userBearing, bearing);
         
                 console.log("user inside valid token",user)
