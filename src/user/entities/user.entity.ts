@@ -71,6 +71,9 @@ export class User {
     @Prop({ type: Number })
     loyalty_point: number;
 
+    @Prop({ type: Number })
+    current_bearing: number;
+
     @Prop({ default: moment().utc().valueOf() })
     created_at: number;
 

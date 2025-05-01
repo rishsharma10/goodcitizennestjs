@@ -58,81 +58,238 @@ export class WebSocketService {
     }
   }
 
+  // async save_coordinates(user: any, payload: LatLong): Promise<any> {
+  //   try {
+  //     let { lat, long } = payload;
+  //     let query = { _id: new Types.ObjectId(user._id) };
+  //     let location = {
+  //       type: 'Point',
+  //       coordinates: [parseFloat(long), parseFloat(lat)], // Note: MongoDB stores coordinates as [longitude, latitude]
+  //     };
+  //     const [prevLong, prevLat] = user.pre_location.coordinates;
+
+  //     let driverBearing = await this.calculateBearing(
+  //       prevLat,
+  //       prevLong,
+  //       +lat,
+  //       +long,
+  //     );
+  //     let update = {
+  //       $set: {
+  //         pre_location: user?.location || {
+  //           type: 'Point',
+  //           coordinates: [
+  //             parseFloat(user.longitude),
+  //             parseFloat(user.latitude),
+  //           ],
+  //         },
+  //         location,
+  //         latitude: parseFloat(lat),
+  //         longitude: parseFloat(long),
+  //         // direction
+  //       },
+  //     };
+  //     console.log(update, 'update');
+  //     let getUser = await this.userModel.findByIdAndUpdate(query, update, {
+  //       new: true,
+  //     });
+  //     return { driver: getUser, driverBearing };
+  //   } catch (error) {
+  //     console.log('erorooooo', error);
+
+  //     throw error;
+  //   }
+  // }
+
   async save_coordinates(user: any, payload: LatLong): Promise<any> {
     try {
       let { lat, long } = payload;
       let query = { _id: new Types.ObjectId(user._id) };
+
+      // Convert strings to numbers if needed
+      const latitude = parseFloat(lat);
+      const longitude = parseFloat(long);
+
       let location = {
         type: 'Point',
-        coordinates: [parseFloat(long), parseFloat(lat)], // Note: MongoDB stores coordinates as [longitude, latitude]
+        coordinates: [longitude, latitude], // MongoDB format: [long, lat]
       };
-      const [prevLong, prevLat] = user.pre_location.coordinates;
 
-      let driverBearing = await this.calculateBearing(
-        prevLat,
-        prevLong,
-        +lat,
-        +long,
-      );
+      // Calculate bearing only if we have valid previous coordinates
+      let driverBearing = 0;
+      if (
+        user.pre_location &&
+        Array.isArray(user.pre_location.coordinates) &&
+        user.pre_location.coordinates.length === 2
+      ) {
+        const [prevLong, prevLat] = user.pre_location.coordinates;
+
+        // Only calculate bearing if movement is significant enough (to avoid erratic values)
+        const distanceMoved = this.calculateDistance(
+          prevLat,
+          prevLong,
+          latitude,
+          longitude,
+        );
+        if (distanceMoved > 0.005) {
+          // Minimum 5 meters movement to calculate bearing
+          driverBearing = await this.calculateBearing(
+            prevLat,
+            prevLong,
+            latitude,
+            longitude,
+          );
+        } else {
+          // Keep previous bearing if movement is too small
+          driverBearing = user.current_bearing || 0;
+        }
+      }
+
       let update = {
         $set: {
           pre_location: user?.location || {
             type: 'Point',
             coordinates: [
-              parseFloat(user.longitude),
-              parseFloat(user.latitude),
+              parseFloat(user.longitude || 0),
+              parseFloat(user.latitude || 0),
             ],
           },
           location,
-          latitude: parseFloat(lat),
-          longitude: parseFloat(long),
-          // direction
+          latitude: latitude,
+          longitude: longitude,
+          current_bearing: driverBearing, // Store current bearing for future reference
+          last_location_update: new Date(),
         },
       };
-      console.log(update, 'update');
+
       let getUser = await this.userModel.findByIdAndUpdate(query, update, {
         new: true,
       });
+
       return { driver: getUser, driverBearing };
     } catch (error) {
-      console.log('erorooooo', error);
-
+      console.error('Error in save_coordinates:', error);
       throw error;
     }
   }
 
-  async calculatDirection(
-    prevLat: number,
-    prevLon: number,
-    curLat: number,
-    curLon: number,
-  ): Promise<string> {
-    const toRadians = (deg: number) => deg * (Math.PI / 180);
-    const toDegrees = (rad: number) => rad * (180 / Math.PI);
-
-    const lat1 = toRadians(prevLat);
-    const lat2 = toRadians(curLat);
-    const diffLong = toRadians(curLon - prevLon);
-
-    const x = Math.sin(diffLong) * Math.cos(lat2);
-    const y =
-      Math.cos(lat1) * Math.sin(lat2) -
-      Math.sin(lat1) * Math.cos(lat2) * Math.cos(diffLong);
-
-    let initialBearing = toDegrees(Math.atan2(x, y));
-    let degree = (initialBearing + 360) % 360; // Normalize to 0-360 degrees
-    // **Using angle ranges**
-    if (degree >= 337.5 || degree < 22.5) return DIRECTION.NORTH;
-    if (degree >= 22.5 && degree < 67.5) return DIRECTION.NORTH_EAST;
-    if (degree >= 67.5 && degree < 112.5) return DIRECTION.EAST;
-    if (degree >= 112.5 && degree < 157.5) return DIRECTION.SOUTH_EAST;
-    if (degree >= 157.5 && degree < 202.5) return DIRECTION.SOUTH;
-    if (degree >= 202.5 && degree < 247.5) return DIRECTION.SOUTH_WEST;
-    if (degree >= 247.5 && degree < 292.5) return DIRECTION.WEST;
-    if (degree >= 292.5 && degree < 337.5) return DIRECTION.NORTH_WEST;
-
-    return DIRECTION.NORTH; // Default (Failsafe)
+  calculateDistance(
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ): number {
+    const R = 6371; // Earth radius in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
+
+  // async findUsersAhead(
+  //   driver_id: string,
+  //   ride_id: string | Types.ObjectId,
+  //   lat: number,
+  //   long: number,
+  //   bearing: number, // Driver's movement angle
+  //   radiusInKm: number,
+  //   is_first: boolean,
+  // ) {
+  //   try {
+  //     const radiusInRadians = radiusInKm / 6378.1; // Convert km to radians
+
+  //     // Query: Get users within the radius, excluding the driver
+  //     let query = {
+  //       _id: { $ne: new Types.ObjectId(driver_id) },
+  //       role: 'USER',
+  //       location: {
+  //         $geoWithin: {
+  //           $centerSphere: [[long, lat], radiusInRadians],
+  //         },
+  //       },
+  //     };
+
+  //     const projection = {
+  //       _id: 1,
+  //       socket_id: 1,
+  //       latitude: 1,
+  //       longitude: 1,
+  //       pre_location: 1,
+  //     };
+
+  //     // Fetch users in range
+  //     const users = await this.userModel.find(query, projection, this.option);
+  //     console.log(`Found ${users.length} users within ${radiusInKm} km radius`);
+
+  //     const usersAheadTokens = await Promise.all(
+  //       users.map(async (user) => {
+  //         console.log('user----', user);
+
+  //         if (
+  //           !user.pre_location ||
+  //           !Array.isArray(user.pre_location.coordinates)
+  //         )
+  //           return null;
+
+  //         const [prevLong, prevLat] = user.pre_location.coordinates;
+  //         const userBearing = await this.calculateBearing(
+  //           prevLat,
+  //           prevLong,
+  //           user.latitude,
+  //           user.longitude,
+  //         );
+  //         const token = await this.sessionModel
+  //           .findOne({ user_id: user._id })
+  //           .lean();
+
+  //         // Users are ahead if they are within a 60° cone in front of the driver
+  //         const directionDifference = await this.getAngleDifference(
+  //           userBearing,
+  //           bearing,
+  //         );
+  //         console.log(`driverBearing`, bearing);
+  //         console.log(`userBearing ${user._id}`, userBearing);
+  //         console.log(`directionDifference`, directionDifference);
+
+  //         if (is_first) {
+  //           return token;
+  //         }
+  //         return directionDifference <= 60 ? token : null;
+  //       }),
+  //     );
+  //     console.log('usersAheadTokens', usersAheadTokens);
+
+  //     // Filter out null values
+  //     const validTokens = usersAheadTokens
+  //       .filter((token) => token?.fcm_token !== null)
+  //       .map((token) => ({
+  //         fcm_token: token?.fcm_token,
+  //         user_id: token?.user_id,
+  //       }));
+
+  //     console.log('validTokens', validTokens);
+
+  //     let message = 'An ambulane is coming. Please move aside';
+  //     let title = 'Good Citizen Alert';
+  //     await this.notificationService.send_notification(
+  //       validTokens,
+  //       message,
+  //       title,
+  //       driver_id,
+  //       ride_id,
+  //     );
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+
+  // Calculate the bearing between two latitude/longitude points
 
   async findUsersAhead(
     driver_id: string,
@@ -169,69 +326,117 @@ export class WebSocketService {
       const users = await this.userModel.find(query, projection, this.option);
       console.log(`Found ${users.length} users within ${radiusInKm} km radius`);
 
-      const usersAheadTokens = await Promise.all(
+      const usersToNotify = await Promise.all(
         users.map(async (user) => {
-          console.log('user----', user);
+          // 1. Calculate bearing FROM driver TO user (this tells us direction to the user)
+          const bearingToUser = await this.calculateBearing(
+            lat, // driver latitude
+            long, // driver longitude
+            user.latitude, // user latitude
+            user.longitude, // user longitude
+          );
+
+          // 2. Determine if user is ahead of driver by comparing bearingToUser with driver's bearing
+          // If user is in the general direction the driver is moving, they're ahead
+          const angleDiffToUser = await this.getAngleDifference(
+            bearingToUser,
+            bearing,
+          );
+          const isUserAhead = angleDiffToUser <= 60; // User is within a 60° cone ahead of driver
+
+          // 3. If we have user's previous coordinates, determine if they're moving in same direction
+          let userBearing;
+          let isMovingSameDirection = false;
 
           if (
-            !user.pre_location ||
-            !Array.isArray(user.pre_location.coordinates)
-          )
-            return null;
+            user.pre_location &&
+            Array.isArray(user.pre_location.coordinates)
+          ) {
+            const [prevLong, prevLat] = user.pre_location.coordinates;
 
-          const [prevLong, prevLat] = user.pre_location.coordinates;
-          const userBearing = await this.calculateBearing(
-            prevLat,
-            prevLong,
-            user.latitude,
-            user.longitude,
-          );
+            // Only calculate if there's meaningful movement
+            const distanceMoved = this.calculateDistance(
+              prevLat,
+              prevLong,
+              user.latitude,
+              user.longitude,
+            );
+
+            if (distanceMoved > 0.005) {
+              // 5 meters minimum to avoid GPS jitter
+              userBearing = await this.calculateBearing(
+                prevLat,
+                prevLong,
+                user.latitude,
+                user.longitude,
+              );
+
+              // Compare user's movement direction with driver's direction
+              const directionDifference = await this.getAngleDifference(
+                userBearing,
+                bearing,
+              );
+              isMovingSameDirection = directionDifference <= 45; // Within 45° of driver's direction
+
+              console.log(`User ${user._id}:`);
+              console.log(`  Driver bearing: ${bearing}°`);
+              console.log(`  User bearing: ${userBearing}°`);
+              console.log(`  Direction difference: ${directionDifference}°`);
+              console.log(
+                `  Is moving same direction: ${isMovingSameDirection}`,
+              );
+            }
+          }
+
+          console.log(`User ${user._id}:`);
+          console.log(`  Bearing to user: ${bearingToUser}°`);
+          console.log(`  Angle diff to user: ${angleDiffToUser}°`);
+          console.log(`  Is ahead: ${isUserAhead}`);
+
+          // Get user's token
           const token = await this.sessionModel
             .findOne({ user_id: user._id })
             .lean();
 
-          // Users are ahead if they are within a 60° cone in front of the driver
-          const directionDifference = await this.getAngleDifference(
-            userBearing,
-            bearing,
-          );
-          console.log(`driverBearing`, bearing);
-          console.log(`userBearing ${user._id}`, userBearing);
-          console.log(`directionDifference`, directionDifference);
-
-          if (is_first) {
-            return token;
+          // 4. Decision logic for notification
+          let shouldNotify = false;
+          if (isUserAhead) {
+            // Regular notification - user must be ahead
+            // Prioritize users moving in same direction, but notify all ahead users
+            shouldNotify = true;
           }
-          return directionDifference <= 180 ? token : null;
+
+          return shouldNotify ? token : null;
         }),
       );
-      console.log('usersAheadTokens', usersAheadTokens);
 
       // Filter out null values
-      const validTokens = usersAheadTokens
+      const validTokens = usersToNotify
         .filter((token) => token?.fcm_token !== null)
         .map((token) => ({
           fcm_token: token?.fcm_token,
           user_id: token?.user_id,
         }));
 
-      console.log('validTokens', validTokens);
+      console.log('Found valid tokens:', validTokens.length);
 
-      let message = 'An ambulane is coming. Please move aside';
-      let title = 'Good Citizen Alert';
-      await this.notificationService.send_notification(
-        validTokens,
-        message,
-        title,
-        driver_id,
-        ride_id,
-      );
+      if (validTokens.length > 0) {
+        let message = 'An ambulance is coming. Please move aside';
+        let title = 'Emergency Vehicle Alert';
+        await this.notificationService.send_notification(
+          validTokens,
+          message,
+          title,
+          driver_id,
+          ride_id,
+        );
+      }
     } catch (error) {
+      console.error('Error in findUsersAhead:', error);
       throw error;
     }
   }
 
-  // Calculate the bearing between two latitude/longitude points
   async calculateBearing(
     lat1: number,
     lon1: number,
@@ -257,137 +462,5 @@ export class WebSocketService {
   async getAngleDifference(angle1: number, angle2: number) {
     const diff = Math.abs(angle1 - angle2) % 360;
     return diff > 180 ? 360 - diff : diff;
-  }
-
-
-
-async findUsersAheadBox(
-    driver_id: string,
-    ride_id: string | Types.ObjectId,
-    lat: number,
-    long: number,
-    bearing: number,
-    distanceKm: number,
-    is_first: boolean,
-) {
-    try {
-        let boxWidthMeters = 100;
-        const halfWidth = boxWidthMeters / 2 / 1000; // meters to km
-
-        // Define 4 corners of a rectangle based on driver's bearing
-        const frontCenter = await this.getDestinationLatLng(lat, long, bearing, distanceKm); // ahead of driver
-        const leftFront = await this.getDestinationLatLng(frontCenter.lat, frontCenter.lng, bearing - 90, halfWidth);
-        const rightFront = await this.getDestinationLatLng(frontCenter.lat, frontCenter.lng, bearing + 90, halfWidth);
-        const leftBack =await this.getDestinationLatLng(lat, long, bearing - 90, halfWidth);
-        const rightBack = await this.getDestinationLatLng(lat, long, bearing + 90, halfWidth);
-        // Create polygon for MongoDB query
-        const polygon = [
-            [leftBack.lng, leftBack.lat],
-            [leftFront.lng, leftFront.lat],
-            [rightFront.lng, rightFront.lat],
-            [rightBack.lng, rightBack.lat],
-            [leftBack.lng, leftBack.lat] // Close the polygon
-        ];
-        console.log('====================================',lat);
-        console.log('====================================',long);
-        console.log('====================================',bearing);
-        console.log('====================================',polygon);
-
-        // const query = {
-        //     _id: { $ne: new Types.ObjectId(driver_id) },
-        //     role: "USER",
-        //     location: {
-        //         $geoIntersects: {
-        //             $polygon: polygon
-        //         }
-        //     }
-        // };
-
-        const query = {
-          _id: { $ne: new Types.ObjectId(driver_id) },
-          role: "USER",
-          location: {
-            $geoIntersects: {
-              $geometry: {
-                type: "Polygon",
-                coordinates: [polygon],
-              },
-            },
-          },
-        };
-
-        
-        const users = await this.userModel.find(query, {}, this.option);
-
-        const usersAheadTokens = await Promise.all(
-            users.map(async user => {
-                if (!user?.pre_location || !Array.isArray(user.pre_location.coordinates)) return null;
-        
-                const [prevLong, prevLat] = user.pre_location.coordinates;
-        
-                const userBearing = await this.calculateBearing(
-                    prevLat,
-                    prevLong,
-                    user.latitude,
-                    user.longitude
-                );
-                console.log('===userBearing',userBearing);
-                const directionDifference = await this.getAngleDifference(userBearing, bearing);
-        
-                console.log("user inside valid token",user)
-                const token = await this.sessionModel.findOne({ user_id: user._id });
-                console.log("session",token)
-                
-                const maxAllowedDirectionDiff = 50; // degrees
-                console.log("directionDifference",directionDifference)
-                if (directionDifference <= maxAllowedDirectionDiff) {
-                    return token;
-                }
-        
-                return null;
-            })
-        );
-        
-
-        const validTokens = usersAheadTokens
-            .filter(token => token?.fcm_token !== null)
-            .map(token => ({
-                fcm_token: token?.fcm_token,
-                user_id: token?.user_id
-            }));
-
-        await this.notificationService.send_notification(validTokens, "An ambulance is coming. Please move aside", "Good Citizen Alert", driver_id, ride_id);
-    } catch (error) {
-        throw error;
-    }
-}
-
-  async getDestinationLatLng(
-    lat: number,
-    lng: number,
-    bearingDeg: number,
-    distanceKm: number,
-  ) {
-    const R = 6371; // Earth's radius in km
-    const bearingRad = (bearingDeg * Math.PI) / 180;
-    const latRad = (lat * Math.PI) / 180;
-    const lngRad = (lng * Math.PI) / 180;
-
-    const newLatRad = Math.asin(
-      Math.sin(latRad) * Math.cos(distanceKm / R) +
-        Math.cos(latRad) * Math.sin(distanceKm / R) * Math.cos(bearingRad),
-    );
-
-    const newLngRad =
-      lngRad +
-      Math.atan2(
-        Math.sin(bearingRad) * Math.sin(distanceKm / R) * Math.cos(latRad),
-        Math.cos(distanceKm / R) - Math.sin(latRad) * Math.sin(newLatRad),
-      );
-
-    return {
-      lat: (newLatRad * 180) / Math.PI,
-      lng: (newLngRad * 180) / Math.PI,
-    };
   }
 }
