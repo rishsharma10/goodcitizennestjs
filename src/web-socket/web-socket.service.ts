@@ -297,7 +297,7 @@ async findUsersAheadBox(
             _id: { $ne: new Types.ObjectId(driver_id) },
             role: "USER",
             location: {
-                $geoWithin: {
+                $geoIntersects: {
                     $polygon: polygon
                 }
             }
