@@ -15,6 +15,12 @@ export class Notification {
     @Prop({ default: null })
     message: string;
 
+    @Prop({ default: "CH 01 9093" })
+    ambulance_num: string;
+
+    @Prop({ default: "3.2 Km" })
+    distance: string;
+    
     @Prop({ default: RideStatus.STARTED })
     status: string;
 

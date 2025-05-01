@@ -65,6 +65,7 @@ export class NotificationService {
                             driver_id: new Types.ObjectId(driver_id),
                             message,
                             status: RideStatus.STARTED,
+                            
                             created_at: new Date(),
                         };
 

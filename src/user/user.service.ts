@@ -37,6 +37,7 @@ export class UserService {
             if(status){
                 query.status = status
             }
+            console.log("query",query)
             let population =[{ path: "driver_id", select: "first_name last_name email" }];
             let notification = await this.notificationModel.find(query, {}, setOptions).populate(population)
             let data = { count, notification }
