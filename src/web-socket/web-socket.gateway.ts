@@ -36,9 +36,9 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleDisconnect(socket: CustomSocket) {
     try {
       console.log(`Client disconnected: ${socket.id}`);
-      const userId = socket.user._id as string;
+      const userId = socket.user?._id as string;
       if (userId) {
-        await this.webSocketService
+        await this.webSocketService.handleDisconnect(userId);
         this.activeUsers.delete(userId);
         console.log(`User ${userId} disconnected.`);
       }
