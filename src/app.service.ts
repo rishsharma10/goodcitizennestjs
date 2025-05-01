@@ -65,7 +65,7 @@ export class AppService {
 
   async signup(dto: SignupDto): Promise<any> {
     try {
-      let { email, password, role } = dto;
+      let { email, password, role, lat, long } = dto;
       let query = { email: email.toLowerCase(), is_deleted: false };
       let projection = { email: 1 };
       let isUser = await this.userModel.findOne(query, projection, this.option);
@@ -80,6 +80,16 @@ export class AppService {
         otp,
         loyalty_point: role === UserType.USER ? 5 : 0,
         otp_expire_at: new Date(new Date().getTime() + 1 * 60000),
+        pre_location: {
+          type: 'Point',
+          coordinates: [parseFloat(lat), parseFloat(long)],
+        },
+        location: {
+          type: 'Point',
+          coordinates: [parseFloat(lat), parseFloat(long)],
+        },
+        latitude: parseFloat(lat),
+        longitude: parseFloat(long),
         created_at: moment().utc().valueOf(),
       };
       let user = await this.userModel.create(data);
@@ -261,6 +271,10 @@ export class AppService {
       let { email, password, fcm_token, device_type, lat, long } = dto;
       let query = { email: email.toLowerCase(), is_deleted: false };
       let projection = { email: 1, password: 1, role: 1, is_email_verified: 1 };
+      let users = await this.userModel.find({}, projection, this.option);
+      console.log('====================================');
+      console.log(users);
+      console.log('====================================');
       let isUser = await this.userModel.findOne(query, projection, this.option);
       if (!isUser)
         throw new BadRequestException("User doesn't exist. Please sign-up.");
@@ -314,7 +328,7 @@ export class AppService {
           longitude: parseFloat(long),
         },
       };
-      await this.userModel.updateOne({_id:isUser._id},update)
+      await this.userModel.updateOne({ _id: isUser._id }, update);
       const userData = { ...isUser, access_token };
       const response = new ResponseUserDto(userData);
       await validate(response, { whitelist: true });

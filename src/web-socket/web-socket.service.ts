@@ -66,11 +66,11 @@ export class WebSocketService {
         type: 'Point',
         coordinates: [parseFloat(long), parseFloat(lat)], // Note: MongoDB stores coordinates as [longitude, latitude]
       };
+      const [prevLong, prevLat] = user.pre_location.coordinates;
 
-      // let direction = await this.calculatDirection(user.latitude, user.longitude, +lat, +long);
       let driverBearing = await this.calculateBearing(
-        user.latitude,
-        user.longitude,
+        prevLat,
+        prevLong,
         +lat,
         +long,
       );
@@ -180,7 +180,7 @@ export class WebSocketService {
             return null;
 
           const [prevLong, prevLat] = user.pre_location.coordinates;
-          const userBearing = this.calculateBearing(
+          const userBearing = await this.calculateBearing(
             prevLat,
             prevLong,
             user.latitude,
@@ -191,7 +191,7 @@ export class WebSocketService {
             .lean();
 
           // Users are ahead if they are within a 60° cone in front of the driver
-          const directionDifference = this.getAngleDifference(
+          const directionDifference = await this.getAngleDifference(
             userBearing,
             bearing,
           );
@@ -232,12 +232,12 @@ export class WebSocketService {
   }
 
   // Calculate the bearing between two latitude/longitude points
-  calculateBearing(
+  async calculateBearing(
     lat1: number,
     lon1: number,
     lat2: number,
     lon2: number,
-  ): number {
+  ) {
     const toRadians = (deg: number) => (deg * Math.PI) / 180;
     const toDegrees = (rad: number) => (rad * 180) / Math.PI;
 
@@ -254,7 +254,7 @@ export class WebSocketService {
   }
 
   // Get the smallest angle difference (accounting for 360-degree wraparound)
-  getAngleDifference(angle1: number, angle2: number): number {
+  async getAngleDifference(angle1: number, angle2: number) {
     const diff = Math.abs(angle1 - angle2) % 360;
     return diff > 180 ? 360 - diff : diff;
   }
@@ -271,7 +271,7 @@ async findUsersAheadBox(
     is_first: boolean,
 ) {
     try {
-        let boxWidthMeters = 100;
+        let boxWidthMeters = 50;
         const halfWidth = boxWidthMeters / 2 / 1000; // meters to km
 
         // Define 4 corners of a rectangle based on driver's bearing
@@ -307,26 +307,26 @@ async findUsersAheadBox(
 
         const usersAheadTokens = await Promise.all(
             users.map(async user => {
-                if (!user.pre_location || !Array.isArray(user.pre_location.coordinates)) return null;
+                if (!user?.pre_location || !Array.isArray(user.pre_location.coordinates)) return null;
         
                 const [prevLong, prevLat] = user.pre_location.coordinates;
         
-                const userBearing = this.calculateBearing(
+                const userBearing = await this.calculateBearing(
                     prevLat,
                     prevLong,
                     user.latitude,
                     user.longitude
                 );
         
-                const directionDifference = this.getAngleDifference(userBearing, bearing);
+                const directionDifference = await this.getAngleDifference(userBearing, bearing);
         
-                const token = await this.sessionModel.findOne({ user_id: user._id }).lean();
-                console.log("user",user)
+                console.log("user inside valid token",user)
+                const token = await this.sessionModel.findOne({ user_id: user._id });
+                console.log("session",token)
                 
-                const maxAllowedDirectionDiff = 35; // degrees
+                const maxAllowedDirectionDiff = 50; // degrees
                 console.log("directionDifference",directionDifference)
                 if (directionDifference <= maxAllowedDirectionDiff) {
-                    console.log("session",token)
                     return token;
                 }
         
