@@ -271,7 +271,7 @@ async findUsersAheadBox(
     is_first: boolean,
 ) {
     try {
-        let boxWidthMeters = 50;
+        let boxWidthMeters = 100;
         const halfWidth = boxWidthMeters / 2 / 1000; // meters to km
 
         // Define 4 corners of a rectangle based on driver's bearing
