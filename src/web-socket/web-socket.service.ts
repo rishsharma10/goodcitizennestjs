@@ -293,16 +293,30 @@ async findUsersAheadBox(
         console.log('====================================',bearing);
         console.log('====================================',polygon);
 
+        // const query = {
+        //     _id: { $ne: new Types.ObjectId(driver_id) },
+        //     role: "USER",
+        //     location: {
+        //         $geoIntersects: {
+        //             $polygon: polygon
+        //         }
+        //     }
+        // };
+
         const query = {
-            _id: { $ne: new Types.ObjectId(driver_id) },
-            role: "USER",
-            location: {
-                $geoIntersects: {
-                    $polygon: polygon
-                }
-            }
+          _id: { $ne: new Types.ObjectId(driver_id) },
+          role: "USER",
+          location: {
+            $geoIntersects: {
+              $geometry: {
+                type: "Polygon",
+                coordinates: [polygon],
+              },
+            },
+          },
         };
 
+        
         const users = await this.userModel.find(query, {}, this.option);
 
         const usersAheadTokens = await Promise.all(
