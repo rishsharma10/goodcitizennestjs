@@ -19,7 +19,8 @@ export class LocationService {
     private commonService: CommonService,
     private notificationService: NotificationService,
   ) {}
-
+  
+  
   async findUsersAhead(
     driver_id: string,
     ride_id: Types.ObjectId | string,

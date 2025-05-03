@@ -77,6 +77,9 @@ export class User {
     @Prop({ type: Number })
     current_speed: number;
 
+    @Prop({ type: Date })
+    last_location_update:Date
+
     @Prop({ default: moment().utc().valueOf() })
     created_at: number;
 
