@@ -20,7 +20,7 @@ export class LocationService {
     private notificationService: NotificationService,
   ) {}
   
-  
+
   async findUsersAhead(
     driver_id: string,
     ride_id: Types.ObjectId | string,
@@ -113,6 +113,7 @@ export class LocationService {
     }
   }
 
+  
   async save_coordinates(
     user: any,
     payload: LatLong,
