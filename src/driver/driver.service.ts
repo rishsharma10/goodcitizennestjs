@@ -8,6 +8,7 @@ import { validate } from 'class-validator';
 import { RideStatus } from 'src/common/utils';
 import { Notification, NotificationDocument } from 'src/entities/notification.entity';
 import { WebSocketService } from 'src/web-socket/web-socket.service';
+import { LocationService } from 'src/web-socket/location.service';
 
 @Injectable()
 export class DriverService {
@@ -16,7 +17,8 @@ export class DriverService {
   constructor(
     @InjectModel(DriverRide.name) private driverRideModel: Model<DriverRideDocument>,
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
-    private readonly webSocketService: WebSocketService
+    private readonly webSocketService: WebSocketService,
+    private readonly locationService: LocationService,
   ) { }
 
   async profile(user) {
@@ -45,9 +47,9 @@ export class DriverService {
       }
       let ride = await this.driverRideModel.create(data);
       let payload = { lat: pickup_location.latitude, long: pickup_location.longitude }
-      let { driver, driverBearing } = await this.webSocketService.save_coordinates(user, payload);
-      await this.webSocketService.findUsersAhead(driver._id, ride._id, driver?.latitude,
-        driver?.longitude, driverBearing, 5, true);
+      let { driver, driverBearing } = await this.locationService.save_coordinates(user, payload);
+      await this.locationService.findUsersAhead(driver._id, ride._id, driver?.latitude,
+        driver?.longitude, driverBearing, 5);
       return { message: "Ride Started", data: ride } 
     } catch (error) {
       throw error

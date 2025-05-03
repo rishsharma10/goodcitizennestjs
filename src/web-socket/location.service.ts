@@ -89,7 +89,7 @@ export class LocationService {
       ]);
 
       // 3. Send notifications and update timestamps
-      if (users.length > 0) {
+      if (users?.length > 0) {
         const tokens = users.map((u) => u?.fcm_token).filter(Boolean);
         let message = 'An ambulance is coming. Please move aside';
         let title = 'Emergency Vehicle Alert';
@@ -113,7 +113,7 @@ export class LocationService {
     }
   }
 
-  
+
   async save_coordinates(
     user: any,
     payload: LatLong,

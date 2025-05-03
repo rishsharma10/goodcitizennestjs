@@ -9,6 +9,7 @@ import { WebSocketService } from 'src/web-socket/web-socket.service';
 import { JwtModule } from '@nestjs/jwt';
 import { CommonService } from 'src/common/common.service';
 import { NotificationService } from 'src/common/notification.service';
+import { LocationService } from 'src/web-socket/location.service';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { NotificationService } from 'src/common/notification.service';
 
     )],
   controllers: [DriverController],
-  providers: [DriverService, WebSocketService,CommonService,NotificationService],
+  providers: [DriverService, WebSocketService,CommonService,NotificationService,LocationService],
 })
 export class DriverModule { }
