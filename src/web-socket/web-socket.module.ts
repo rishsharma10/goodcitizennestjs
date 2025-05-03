@@ -10,6 +10,7 @@ import { WebSocketController } from './web-socket.controller';
 import { NotificationService } from 'src/common/notification.service';
 import { commonModelDefinitions } from 'src/entities';
 import { rideModelDefinitions } from 'src/driver/entities';
+import { LocationService } from './location.service';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { rideModelDefinitions } from 'src/driver/entities';
     MongooseModule.forFeature([...modelDefinitions, ...commonModelDefinitions, ...rideModelDefinitions]),
   ],
   controllers: [WebSocketController],
-  providers: [SocketGateway, WebSocketService, CommonService, NotificationService],
+  providers: [SocketGateway, WebSocketService, CommonService, NotificationService,LocationService],
 })
 export class WebSocketModule { }

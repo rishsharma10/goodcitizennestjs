@@ -74,6 +74,9 @@ export class User {
     @Prop({ type: Number })
     current_bearing: number;
 
+    @Prop({ type: Number })
+    current_speed: number;
+
     @Prop({ default: moment().utc().valueOf() })
     created_at: number;
 

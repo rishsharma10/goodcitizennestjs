@@ -58,49 +58,6 @@ export class WebSocketService {
     }
   }
 
-  // async save_coordinates(user: any, payload: LatLong): Promise<any> {
-  //   try {
-  //     let { lat, long } = payload;
-  //     let query = { _id: new Types.ObjectId(user._id) };
-  //     let location = {
-  //       type: 'Point',
-  //       coordinates: [parseFloat(long), parseFloat(lat)], // Note: MongoDB stores coordinates as [longitude, latitude]
-  //     };
-  //     const [prevLong, prevLat] = user.pre_location.coordinates;
-
-  //     let driverBearing = await this.calculateBearing(
-  //       prevLat,
-  //       prevLong,
-  //       +lat,
-  //       +long,
-  //     );
-  //     let update = {
-  //       $set: {
-  //         pre_location: user?.location || {
-  //           type: 'Point',
-  //           coordinates: [
-  //             parseFloat(user.longitude),
-  //             parseFloat(user.latitude),
-  //           ],
-  //         },
-  //         location,
-  //         latitude: parseFloat(lat),
-  //         longitude: parseFloat(long),
-  //         // direction
-  //       },
-  //     };
-  //     console.log(update, 'update');
-  //     let getUser = await this.userModel.findByIdAndUpdate(query, update, {
-  //       new: true,
-  //     });
-  //     return { driver: getUser, driverBearing };
-  //   } catch (error) {
-  //     console.log('erorooooo', error);
-
-  //     throw error;
-  //   }
-  // }
-
   async save_coordinates(user: any, payload: LatLong): Promise<any> {
     try {
       let { lat, long } = payload;
@@ -131,7 +88,7 @@ export class WebSocketService {
           latitude,
           longitude,
         );
-        if (distanceMoved > 0.005) {
+        if (distanceMoved > 2 / 1000) {
           // Minimum 5 meters movement to calculate bearing
           driverBearing = await this.calculateBearing(
             prevLat,
@@ -192,105 +149,6 @@ export class WebSocketService {
     return R * c;
   }
 
-  // async findUsersAhead(
-  //   driver_id: string,
-  //   ride_id: string | Types.ObjectId,
-  //   lat: number,
-  //   long: number,
-  //   bearing: number, // Driver's movement angle
-  //   radiusInKm: number,
-  //   is_first: boolean,
-  // ) {
-  //   try {
-  //     const radiusInRadians = radiusInKm / 6378.1; // Convert km to radians
-
-  //     // Query: Get users within the radius, excluding the driver
-  //     let query = {
-  //       _id: { $ne: new Types.ObjectId(driver_id) },
-  //       role: 'USER',
-  //       location: {
-  //         $geoWithin: {
-  //           $centerSphere: [[long, lat], radiusInRadians],
-  //         },
-  //       },
-  //     };
-
-  //     const projection = {
-  //       _id: 1,
-  //       socket_id: 1,
-  //       latitude: 1,
-  //       longitude: 1,
-  //       pre_location: 1,
-  //     };
-
-  //     // Fetch users in range
-  //     const users = await this.userModel.find(query, projection, this.option);
-  //     console.log(`Found ${users.length} users within ${radiusInKm} km radius`);
-
-  //     const usersAheadTokens = await Promise.all(
-  //       users.map(async (user) => {
-  //         console.log('user----', user);
-
-  //         if (
-  //           !user.pre_location ||
-  //           !Array.isArray(user.pre_location.coordinates)
-  //         )
-  //           return null;
-
-  //         const [prevLong, prevLat] = user.pre_location.coordinates;
-  //         const userBearing = await this.calculateBearing(
-  //           prevLat,
-  //           prevLong,
-  //           user.latitude,
-  //           user.longitude,
-  //         );
-  //         const token = await this.sessionModel
-  //           .findOne({ user_id: user._id })
-  //           .lean();
-
-  //         // Users are ahead if they are within a 60° cone in front of the driver
-  //         const directionDifference = await this.getAngleDifference(
-  //           userBearing,
-  //           bearing,
-  //         );
-  //         console.log(`driverBearing`, bearing);
-  //         console.log(`userBearing ${user._id}`, userBearing);
-  //         console.log(`directionDifference`, directionDifference);
-
-  //         if (is_first) {
-  //           return token;
-  //         }
-  //         return directionDifference <= 60 ? token : null;
-  //       }),
-  //     );
-  //     console.log('usersAheadTokens', usersAheadTokens);
-
-  //     // Filter out null values
-  //     const validTokens = usersAheadTokens
-  //       .filter((token) => token?.fcm_token !== null)
-  //       .map((token) => ({
-  //         fcm_token: token?.fcm_token,
-  //         user_id: token?.user_id,
-  //       }));
-
-  //     console.log('validTokens', validTokens);
-
-  //     let message = 'An ambulane is coming. Please move aside';
-  //     let title = 'Good Citizen Alert';
-  //     await this.notificationService.send_notification(
-  //       validTokens,
-  //       message,
-  //       title,
-  //       driver_id,
-  //       ride_id,
-  //     );
-  //   } catch (error) {
-  //     throw error;
-  //   }
-  // }
-
-  // Calculate the bearing between two latitude/longitude points
-
   async findUsersAhead(
     driver_id: string,
     ride_id: string | Types.ObjectId,
@@ -304,12 +162,16 @@ export class WebSocketService {
       const radiusInRadians = radiusInKm / 6378.1; // Convert km to radians
 
       // Query: Get users within the radius, excluding the driver
-      let query = {
+      const query = {
         _id: { $ne: new Types.ObjectId(driver_id) },
         role: 'USER',
         location: {
-          $geoWithin: {
-            $centerSphere: [[long, lat], radiusInRadians],
+          $nearSphere: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [long, lat],
+            },
+            $maxDistance: radiusInKm * 1000, // Convert km to meters
           },
         },
       };
@@ -437,25 +299,31 @@ export class WebSocketService {
     }
   }
 
+  // Revised calculateBearing with debug logging
   async calculateBearing(
     lat1: number,
     lon1: number,
     lat2: number,
     lon2: number,
   ) {
-    const toRadians = (deg: number) => (deg * Math.PI) / 180;
-    const toDegrees = (rad: number) => (rad * 180) / Math.PI;
+    const toRad = (deg: number) => deg * (Math.PI / 180);
+    const toDeg = (rad: number) => rad * (180 / Math.PI);
 
-    const φ1 = toRadians(lat1);
-    const φ2 = toRadians(lat2);
-    const Δλ = toRadians(lon2 - lon1);
+    const φ1 = toRad(lat1);
+    const φ2 = toRad(lat2);
+    const Δλ = toRad(lon2 - lon1);
 
-    const x = Math.sin(Δλ) * Math.cos(φ2);
-    const y =
+    const y = Math.sin(Δλ) * Math.cos(φ2);
+    const x =
       Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
 
-    let θ = Math.atan2(x, y);
-    return (toDegrees(θ) + 360) % 360; // Normalize to 0-360 degrees
+    const θ = Math.atan2(y, x);
+    const bearing = (toDeg(θ) + 360) % 360;
+
+    console.log(
+      `Bearing from (${lat1},${lon1}) to (${lat2},${lon2}): ${bearing}°`,
+    );
+    return bearing;
   }
 
   // Get the smallest angle difference (accounting for 360-degree wraparound)
