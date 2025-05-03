@@ -15,9 +15,6 @@ async function bootstrap() {
   app.enableCors();
   app.use(express.json());
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, skipMissingProperties: true  }));
-  // app.use(express.urlencoded({ extended: true }));
-  // app.use(bodyParser.urlencoded({ extended: true }));
-  // app.use(bodyParser.json());
   app.useGlobalPipes(new ValidationPipe({ skipMissingProperties: true, transform: true, whitelist: true }));
   const config = new DocumentBuilder()
     .setTitle('Goodcitizen App')
