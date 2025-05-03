@@ -30,6 +30,8 @@ export class LocationService {
     radiusInKm: number,
   ) {
     try {
+      console.log("findUsersAhead");
+
       // 1. Calculate future position projection
       const futurePoint = this.calculateFuturePosition(
         [long, lat],
@@ -87,7 +89,7 @@ export class LocationService {
           },
         },
       ]);
-
+      console.log("users",users);
       // 3. Send notifications and update timestamps
       if (users?.length > 0) {
         const tokens = users.map((u) => u?.fcm_token).filter(Boolean);
@@ -119,6 +121,8 @@ export class LocationService {
     payload: LatLong,
   ): Promise<{ driver: any; driverBearing: number }> {
     try {
+      console.log("save_coordinates");
+      
       const { lat, long } = payload;
       const query = { _id: new Types.ObjectId(user._id) };
 
