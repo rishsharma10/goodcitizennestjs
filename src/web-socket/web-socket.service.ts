@@ -262,7 +262,7 @@ export class WebSocketService {
 
           // 4. Decision logic for notification
           let shouldNotify = false;
-          if (isUserAhead) {
+          if (isUserAhead && isMovingSameDirection) {
             // Regular notification - user must be ahead
             // Prioritize users moving in same direction, but notify all ahead users
             shouldNotify = true;
