@@ -45,7 +45,7 @@ export class NotificationService {
         for (let i = 0; i < tokens.length; i += chunkSize) {
           const tokenChunk = tokens.slice(i, i + chunkSize);
 
-          const fcmTokens = tokenChunk.map((t) => t);
+          const fcmTokens = tokenChunk.map((t) => t.fcm_token);
 
 
           const messagePayload = {
