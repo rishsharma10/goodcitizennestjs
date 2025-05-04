@@ -272,9 +272,6 @@ export class AppService {
       let query = { email: email.toLowerCase(), is_deleted: false };
       let projection = { email: 1, password: 1, role: 1, is_email_verified: 1 };
       let users = await this.userModel.find({}, projection, this.option);
-      console.log('====================================');
-      console.log(users);
-      console.log('====================================');
       let isUser = await this.userModel.findOne(query, projection, this.option);
       if (!isUser)
         throw new BadRequestException("User doesn't exist. Please sign-up.");

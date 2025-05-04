@@ -139,6 +139,8 @@ export class LocationService {
     coneAngle: number,
   ): Promise<any[]> {
     try {
+      console.log("findUsersInDirectionalPath--called");
+
       // Adjust parameters based on speed and context
       let effectiveConeAngle = coneAngle;
       let effectiveDistance = distanceAhead;
@@ -246,17 +248,17 @@ export class LocationService {
     radiusMeters: number,
   ): Promise<any[]> {
     try {
+      console.log("findNearbyUsers--called");
       const users = await this.userModel.aggregate([
         {
           $match: {
             location: {
-              $near: {
-                $geometry: {
-                  type: 'Point',
-                  coordinates: [long, lat],
-                },
-                $maxDistance: radiusMeters,
-              },
+              $geoWithin: {
+                $centerSphere: [
+                  [long, lat], 
+                  radiusMeters / 6378000 // Convert meters to radians (Earth radius = ~6378 km)
+                ]
+              }
             },
             _id: { $ne: new Types.ObjectId(driver_id) },
             role: 'USER',
