@@ -23,7 +23,7 @@ export class NotificationService {
         tokens: any,
         message: string,
         title: string,
-        driver_id: string,
+        driver_id: string | Types.ObjectId,
         ride_id: string | Types.ObjectId
     ) {
         try {
@@ -90,7 +90,7 @@ export class NotificationService {
         }
     }
 
-    async loyalty_point(user_id: string, driver_id: string, ride_id: string|Types.ObjectId) {
+    async loyalty_point(user_id: string, driver_id: string | Types.ObjectId, ride_id: string|Types.ObjectId) {
         try {
             let query = {
                 user_id: new Types.ObjectId(user_id),
