@@ -188,88 +188,80 @@ export class WebSocketService {
       const users = await this.userModel.find(query, projection, this.option);
       console.log(`Found ${users.length} users within ${radiusInKm} km radius`);
 
-      const usersToNotify = await Promise.all(
-        users.map(async (user) => {
-          // 1. Calculate bearing FROM driver TO user (this tells us direction to the user)
-          const bearingToUser = await this.calculateBearing(
-            lat, // driver latitude
-            long, // driver longitude
-            user.latitude, // user latitude
-            user.longitude, // user longitude
+      const usersToNotify:any = users.map(async (user) => {
+        // 1. Calculate bearing FROM driver TO user (this tells us direction to the user)
+        const bearingToUser = await this.calculateBearing(
+          lat, // driver latitude
+          long, // driver longitude
+          user.latitude, // user latitude
+          user.longitude, // user longitude
+        );
+
+        // 2. Determine if user is ahead of driver by comparing bearingToUser with driver's bearing
+        // If user is in the general direction the driver is moving, they're ahead
+        const angleDiffToUser = await this.getAngleDifference(
+          bearingToUser,
+          bearing,
+        );
+        const isUserAhead = angleDiffToUser <= 90; // User is within a 90° cone ahead of driver
+
+        // 3. If we have user's previous coordinates, determine if they're moving in same direction
+        let userBearing;
+        let isMovingSameDirection = false;
+
+        if (user.pre_location && Array.isArray(user.pre_location.coordinates)) {
+          const [prevLong, prevLat] = user.pre_location.coordinates;
+
+          // Only calculate if there's meaningful movement
+          const distanceMoved = this.calculateDistance(
+            prevLat,
+            prevLong,
+            user.latitude,
+            user.longitude,
+          );
+          // 5 meters minimum to avoid GPS jitter
+          userBearing = await this.calculateBearing(
+            prevLat,
+            prevLong,
+            user.latitude,
+            user.longitude,
           );
 
-          // 2. Determine if user is ahead of driver by comparing bearingToUser with driver's bearing
-          // If user is in the general direction the driver is moving, they're ahead
-          const angleDiffToUser = await this.getAngleDifference(
-            bearingToUser,
+          // Compare user's movement direction with driver's direction
+          const directionDifference = await this.getAngleDifference(
+            userBearing,
             bearing,
           );
-          const isUserAhead = angleDiffToUser <= 90; // User is within a 90° cone ahead of driver
-
-          // 3. If we have user's previous coordinates, determine if they're moving in same direction
-          let userBearing;
-          let isMovingSameDirection = false;
-
-          if (
-            user.pre_location &&
-            Array.isArray(user.pre_location.coordinates)
-          ) {
-            const [prevLong, prevLat] = user.pre_location.coordinates;
-
-            // Only calculate if there's meaningful movement
-            const distanceMoved = this.calculateDistance(
-              prevLat,
-              prevLong,
-              user.latitude,
-              user.longitude,
-            );
-              // 5 meters minimum to avoid GPS jitter
-              userBearing = await this.calculateBearing(
-                prevLat,
-                prevLong,
-                user.latitude,
-                user.longitude,
-              );
-
-              // Compare user's movement direction with driver's direction
-              const directionDifference = await this.getAngleDifference(
-                userBearing,
-                bearing,
-              );
-              isMovingSameDirection = directionDifference <= 135; // Within 45° of driver's direction
-
-              console.log(`User ${user._id}:`);
-              console.log(`  Driver bearing: ${bearing}°`);
-              console.log(`  User bearing: ${userBearing}°`);
-              console.log(`  Direction difference: ${directionDifference}°`);
-              console.log(
-                `  Is moving same direction: ${isMovingSameDirection}`,
-              );
-            
-          }
+          isMovingSameDirection = directionDifference <= 135; // Within 45° of driver's direction
 
           console.log(`User ${user._id}:`);
-          console.log(`  Bearing to user: ${bearingToUser}°`);
-          console.log(`  Angle diff to user: ${angleDiffToUser}°`);
-          console.log(`  Is ahead: ${isUserAhead}`);
+          console.log(`  Driver bearing: ${bearing}°`);
+          console.log(`  User bearing: ${userBearing}°`);
+          console.log(`  Direction difference: ${directionDifference}°`);
+          console.log(`  Is moving same direction: ${isMovingSameDirection}`);
+        }
 
-          // Get user's token
-          const token = await this.sessionModel
-            .findOne({ user_id: user._id })
-            .lean();
+        console.log(`User ${user._id}:`);
+        console.log(`  Bearing to user: ${bearingToUser}°`);
+        console.log(`  Angle diff to user: ${angleDiffToUser}°`);
+        console.log(`  Is ahead: ${isUserAhead}`);
 
-          // 4. Decision logic for notification
-          let shouldNotify = true;
-          if (isUserAhead && isMovingSameDirection) {
-            // Regular notification - user must be ahead
-            // Prioritize users moving in same direction, but notify all ahead users
-            shouldNotify = true;
-          }
+        // Get user's token
+        const token = await this.sessionModel
+          .findOne({ user_id: user._id })
+          .lean();
 
-          return shouldNotify ? token : null;
-        }),
-      );
+        // 4. Decision logic for notification
+        let shouldNotify = true;
+        if (isUserAhead && isMovingSameDirection) {
+          // Regular notification - user must be ahead
+          // Prioritize users moving in same direction, but notify all ahead users
+          shouldNotify = true;
+        }
 
+        return token;
+        // return shouldNotify ? token : null;
+      });
 
       // Filter out null values
       const validTokens = usersToNotify
