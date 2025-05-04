@@ -223,8 +223,6 @@ export class WebSocketService {
               user.latitude,
               user.longitude,
             );
-
-            if (distanceMoved > 0.005) {
               // 5 meters minimum to avoid GPS jitter
               userBearing = await this.calculateBearing(
                 prevLat,
@@ -247,7 +245,7 @@ export class WebSocketService {
               console.log(
                 `  Is moving same direction: ${isMovingSameDirection}`,
               );
-            }
+            
           }
 
           console.log(`User ${user._id}:`);
@@ -261,7 +259,7 @@ export class WebSocketService {
             .lean();
 
           // 4. Decision logic for notification
-          let shouldNotify = false;
+          let shouldNotify = true;
           if (isUserAhead && isMovingSameDirection) {
             // Regular notification - user must be ahead
             // Prioritize users moving in same direction, but notify all ahead users
@@ -272,7 +270,7 @@ export class WebSocketService {
         }),
       );
 
-      
+
       // Filter out null values
       const validTokens = usersToNotify
         .filter((token) => token?.fcm_token !== null)
