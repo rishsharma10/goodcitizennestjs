@@ -11,13 +11,16 @@ import { NotificationService } from 'src/common/notification.service';
 import { commonModelDefinitions } from 'src/entities';
 import { rideModelDefinitions } from 'src/driver/entities';
 import { LocationService } from './location.service';
+import { HttpModule, HttpService } from '@nestjs/axios';
 
 @Module({
   imports: [
     JwtModule,
+    HttpModule,
     MongooseModule.forFeature([...modelDefinitions, ...commonModelDefinitions, ...rideModelDefinitions]),
   ],
   controllers: [WebSocketController],
-  providers: [SocketGateway, WebSocketService, CommonService, NotificationService,LocationService],
+  providers: [SocketGateway, WebSocketService, CommonService, NotificationService,LocationService
+  ],
 })
 export class WebSocketModule { }

@@ -204,7 +204,7 @@ export class WebSocketService {
             bearingToUser,
             bearing,
           );
-          const isUserAhead = angleDiffToUser <= 60; // User is within a 60° cone ahead of driver
+          const isUserAhead = angleDiffToUser <= 90; // User is within a 90° cone ahead of driver
 
           // 3. If we have user's previous coordinates, determine if they're moving in same direction
           let userBearing;
@@ -238,7 +238,7 @@ export class WebSocketService {
                 userBearing,
                 bearing,
               );
-              isMovingSameDirection = directionDifference <= 45; // Within 45° of driver's direction
+              isMovingSameDirection = directionDifference <= 135; // Within 45° of driver's direction
 
               console.log(`User ${user._id}:`);
               console.log(`  Driver bearing: ${bearing}°`);

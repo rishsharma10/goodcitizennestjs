@@ -41,24 +41,7 @@ export class NotificationService {
           title,
           body: message,
         };
-
-    //   const message = {
-    //     token: 'fl4Eo08eS-e4atTHNMj-s6:APA91bE-CF9oxkmHnZcov9RaCuxg1GQeSUco-TsD5DsGT4uDqw75q1HuT9ZmdUtpT8nx5Y6GVYHikqEvlKhGzwb_hajQ6xI1b3-cCAYmBn0CZFiSTzUHNlc', // Use 'token' instead of 'tokens'
-    //     notification: {
-    //       title: 'Test Title',
-    //       body: 'Test Body',
-    //     },
-    //     data: {
-    //       // Optional data payload
-    //       testKey: 'testValue',
-    //     },
-    //   };
-
-    //   console.log('Sending test message:', JSON.stringify(message, null, 2));
-
-    //   const response = await this.firebase.messaging.send(message);
-    //   console.log('Test notification sent successfully:', response);
-
+   
         for (let i = 0; i < tokens.length; i += chunkSize) {
           const tokenChunk = tokens.slice(i, i + chunkSize);
 
