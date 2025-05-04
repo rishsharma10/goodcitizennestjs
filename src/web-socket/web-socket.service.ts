@@ -272,6 +272,7 @@ export class WebSocketService {
         }),
       );
 
+      
       // Filter out null values
       const validTokens = usersToNotify
         .filter((token) => token?.fcm_token !== null)
