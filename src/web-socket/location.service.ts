@@ -7,6 +7,7 @@ import { NotificationService } from 'src/common/notification.service';
 import { Session, SessionDocument } from 'src/user/entities/session.entity';
 import { User, UserDocument } from 'src/user/entities/user.entity';
 import { LatLong } from './dto/web-socket.dto';
+import { DriverRide, DriverRideDocument } from 'src/driver/entities/driver-ride.entity';
 
 export class LocationService {
   private option = { lean: true, sort: { _id: -1 } } as const;
@@ -15,6 +16,7 @@ export class LocationService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Session.name) private sessionModel: Model<SessionDocument>,
+    @InjectModel(DriverRide.name) private driverModel: Model<DriverRideDocument>,
     private jwtService: JwtService,
     private configService: ConfigService,
     private commonService: CommonService,
@@ -27,25 +29,39 @@ export class LocationService {
     lat: number,
     long: number,
     bearing: number,
+    speed: number, // Added speed parameter
     distanceAhead: number = 1000, // Default: 1 km ahead
-    coneAngle: number = 30, // Default: 30-degree cone
+    coneAngle: number = 60, // Default: 60-degree cone
   ) {
     try {
       console.log('findUsersAhead');
 
+      // Adjust cone angle and bearing based on speed
+      let effectiveConeAngle = coneAngle;
+      let notificationBearing = bearing;
+      if (speed < 1) { // If speed < 1 m/s, use destination bearing and wider cone
+        effectiveConeAngle = 90; // Wider angle when stationary
+        const ride = await this.driverModel.findById(ride_id).lean();
+        if (ride && ride.drop_location) {
+          const dropLat = ride.drop_location.latitude;
+          const dropLong = ride.drop_location.longitude;
+          notificationBearing = this.calculateBearing(lat, long, dropLat, dropLong);
+        }
+      }
+
       // Calculate the two points forming the base of the triangle
-      const halfAngle = coneAngle / 2;
+      const halfAngle = effectiveConeAngle / 2;
       const pointA = this.calculatePointAtDistance(
         lat,
         long,
         distanceAhead,
-        bearing - halfAngle,
+        notificationBearing - halfAngle,
       );
       const pointB = this.calculatePointAtDistance(
         lat,
         long,
         distanceAhead,
-        bearing + halfAngle,
+        notificationBearing + halfAngle,
       );
 
       // Define the polygon (triangle: current position, pointA, pointB)
@@ -61,15 +77,27 @@ export class LocationService {
         ],
       };
 
-      // Find users within the polygon
+      // Find users within the polygon or within 50 meters
       const users = await this.userModel.aggregate([
         {
           $match: {
-            location: {
-              $geoWithin: {
-                $geometry: polygon,
+            $or: [
+              {
+                location: {
+                  $geoWithin: {
+                    $geometry: polygon,
+                  },
+                },
               },
-            },
+              {
+                location: {
+                  $near: {
+                    $geometry: { type: 'Point', coordinates: [long, lat] },
+                    $maxDistance: 50, // 50 meters minimum radius
+                  },
+                },
+              },
+            ],
             _id: { $ne: new Types.ObjectId(driver_id) }, // Exclude the driver
             role: 'USER',
           },
@@ -149,7 +177,7 @@ export class LocationService {
   async save_coordinates(
     user: any,
     payload: LatLong,
-  ): Promise<{ driver: any; driverBearing: number }> {
+  ): Promise<{ driver: any; driverBearing: number; driverSpeed: number }> { // Added driverSpeed
     try {
       console.log('save_coordinates');
 
@@ -196,6 +224,7 @@ export class LocationService {
       return {
         driver: updatedUser,
         driverBearing: movementMetrics.bearing,
+        driverSpeed: movementMetrics.speed, // Return speed
       };
     } catch (error) {
       console.error('Error in save_coordinates:', error);
@@ -261,22 +290,17 @@ export class LocationService {
     endLat: number,
     endLng: number,
   ): number {
-    // Convert degrees to radians
     const φ1 = (startLat * Math.PI) / 180;
     const λ1 = (startLng * Math.PI) / 180;
     const φ2 = (endLat * Math.PI) / 180;
     const λ2 = (endLng * Math.PI) / 180;
 
-    // Calculate bearing components
     const y = Math.sin(λ2 - λ1) * Math.cos(φ2);
     const x =
       Math.cos(φ1) * Math.sin(φ2) -
       Math.sin(φ1) * Math.cos(φ2) * Math.cos(λ2 - λ1);
 
-    // Calculate initial bearing
     let θ = Math.atan2(y, x);
-
-    // Convert to degrees and normalize (0-360)
     const bearing = ((θ * 180) / Math.PI + 360) % 360;
 
     console.log(
