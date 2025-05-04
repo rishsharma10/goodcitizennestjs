@@ -66,7 +66,7 @@ export class LocationService {
       const ride = await this.driverModel.findById(ride_id).lean();
 
       // Find users using two complementary methods
-      const [directionalUsers, nearbyUsers] = await Promise.all([
+      const [directionalUsers] = await Promise.all([
         // 1. Directional search - users in the path ahead
         this.findUsersInDirectionalPath(
           driver_id,
@@ -80,22 +80,22 @@ export class LocationService {
         ),
 
         // 2. Proximity search - users very close to the ambulance regardless of direction
-        this.findNearbyUsers(driver_id, lat, long, 50), // 50 meters radius
+        // this.findNearbyUsers(driver_id, lat, long, 50), // 50 meters radius
       ]);
 
       // Combine both sets of users, removing duplicates
       const allUsers = [...directionalUsers];
-      for (const user of nearbyUsers) {
-        if (!allUsers.some((u) => u._id.toString() === user._id.toString())) {
-          allUsers.push(user);
-        }
-      }
+      // for (const user of nearbyUsers) {
+      //   if (!allUsers.some((u) => u._id.toString() === user._id.toString())) {
+      //     allUsers.push(user);
+      //   }
+      // }
 
       this.logger.debug(
-        `Found ${allUsers.length} users to notify (${directionalUsers.length} directional, ${nearbyUsers.length} nearby)`,
+        `Found ${allUsers.length} users to notify (${directionalUsers.length} directional nearby)`,
       );
-
-      // Send notifications to found users
+      console.log('all users', allUsers);
+      // Send notifi  cations to found users
       if (allUsers.length > 0) {
         const tokens = allUsers.map((u) => u.fcm_token).filter(Boolean);
 
@@ -139,7 +139,7 @@ export class LocationService {
     coneAngle: number,
   ): Promise<any[]> {
     try {
-      console.log("findUsersInDirectionalPath--called");
+      console.log('findUsersInDirectionalPath--called');
 
       // Adjust parameters based on speed and context
       let effectiveConeAngle = coneAngle;
@@ -248,17 +248,17 @@ export class LocationService {
     radiusMeters: number,
   ): Promise<any[]> {
     try {
-      console.log("findNearbyUsers--called");
+      console.log('findNearbyUsers--called');
       const users = await this.userModel.aggregate([
         {
           $match: {
             location: {
               $geoWithin: {
                 $centerSphere: [
-                  [long, lat], 
-                  radiusMeters / 6378000 // Convert meters to radians (Earth radius = ~6378 km)
-                ]
-              }
+                  [long, lat],
+                  radiusMeters / 6378000, // Convert meters to radians (Earth radius = ~6378 km)
+                ],
+              },
             },
             _id: { $ne: new Types.ObjectId(driver_id) },
             role: 'USER',
@@ -374,7 +374,7 @@ export class LocationService {
       }
 
       // Extract upcoming route points up to lookAheadDistance
-      const relevantRoutePoints:any = [];
+      const relevantRoutePoints: any = [];
       let cumulativeDistance = 0;
 
       relevantRoutePoints.push(currentPosition);
@@ -428,7 +428,7 @@ export class LocationService {
       return null;
     }
 
-    const bufferPoints:any = [];
+    const bufferPoints: any = [];
 
     // Calculate approximate degrees for buffer width (very rough approximation)
     const bufferDegrees = bufferWidthMeters / 111000; // ~111km per degree

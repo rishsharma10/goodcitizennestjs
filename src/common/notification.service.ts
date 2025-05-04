@@ -1,119 +1,137 @@
-import { Injectable } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model, Types } from "mongoose";
-import { FirebaseAdmin, InjectFirebaseAdmin } from "nestjs-firebase";
-import { Notification, NotificationDocument } from "src/entities/notification.entity";
-import { LoyaltyPoint, LoyaltyPointDocument } from "src/user/entities/loyalty-point.entity";
-import { User, UserDocument } from "src/user/entities/user.entity";
-import { RideStatus } from "./utils";
-
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { FirebaseAdmin, InjectFirebaseAdmin } from 'nestjs-firebase';
+import {
+  Notification,
+  NotificationDocument,
+} from 'src/entities/notification.entity';
+import {
+  LoyaltyPoint,
+  LoyaltyPointDocument,
+} from 'src/user/entities/loyalty-point.entity';
+import { User, UserDocument } from 'src/user/entities/user.entity';
+import { RideStatus } from './utils';
 
 @Injectable()
 export class NotificationService {
-    private option = { lean: true, sort: { _id: -1 } } as const;
+  private option = { lean: true, sort: { _id: -1 } } as const;
 
-    constructor(
-        @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
-        @InjectModel(LoyaltyPoint.name) private loyaltyPointModel: Model<LoyaltyPointDocument>,
-        @InjectModel(User.name) private userModel: Model<UserDocument>,
-        @InjectFirebaseAdmin() private firebase: FirebaseAdmin,
-    ) { }
+  constructor(
+    @InjectModel(Notification.name)
+    private notificationModel: Model<NotificationDocument>,
+    @InjectModel(LoyaltyPoint.name)
+    private loyaltyPointModel: Model<LoyaltyPointDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectFirebaseAdmin() private firebase: FirebaseAdmin,
+  ) {}
 
-    async send_notification(
-        tokens: any,
-        message: string,
-        title: string,
-        driver_id: string | Types.ObjectId,
-        ride_id: string | Types.ObjectId
-    ) {
-        try {
-            console.log("tokens---", tokens);
+  async send_notification(
+    tokens: any,
+    message: string,
+    title: string,
+    driver_id: string | Types.ObjectId,
+    ride_id: string | Types.ObjectId,
+  ) {
+    try {
+      console.log('tokens---', tokens);
 
-            const chunkSize = 500;
-            const payload = {
-                title,
-                body: message,
-            };
+      const chunkSize = 500;
+        const payload = {
+          title,
+          body: message,
+        };
 
-            const now = Date.now();
-            const notificationsToSave: Partial<Notification>[] = [];
+    //   const message = {
+    //     token: 'fl4Eo08eS-e4atTHNMj-s6:APA91bE-CF9oxkmHnZcov9RaCuxg1GQeSUco-TsD5DsGT4uDqw75q1HuT9ZmdUtpT8nx5Y6GVYHikqEvlKhGzwb_hajQ6xI1b3-cCAYmBn0CZFiSTzUHNlc', // Use 'token' instead of 'tokens'
+    //     notification: {
+    //       title: 'Test Title',
+    //       body: 'Test Body',
+    //     },
+    //     data: {
+    //       // Optional data payload
+    //       testKey: 'testValue',
+    //     },
+    //   };
 
-            for (let i = 0; i < tokens.length; i += chunkSize) {
-                const tokenChunk = tokens.slice(i, i + chunkSize);
+    //   console.log('Sending test message:', JSON.stringify(message, null, 2));
 
-                const fcmTokens = tokenChunk.map(t => t.fcm_token);
+    //   const response = await this.firebase.messaging.send(message);
+    //   console.log('Test notification sent successfully:', response);
 
-                const messagePayload = {
-                    notification: payload,
-                    webpush: {
-                        notification: {
-                            requireInteraction: false,
-                            renotify: false,
-                        },
-                    },
-                    tokens: fcmTokens,
-                };
+        for (let i = 0; i < tokens.length; i += chunkSize) {
+          const tokenChunk = tokens.slice(i, i + chunkSize);
 
-                const response = await this.firebase.messaging.sendEachForMulticast(messagePayload);
+          const fcmTokens = tokenChunk.map((t) => t);
 
-                response.responses.forEach((res, index) => {
-                    if (res.success) {
-                        const { user_id } = tokenChunk[index];
 
-                        let save_notify = {
-                            user_id: new Types.ObjectId(user_id),
-                            driver_id: new Types.ObjectId(driver_id),
-                            message,
-                            status: RideStatus.STARTED,
-                            
-                            created_at: new Date(),
-                        };
+          const messagePayload = {
+            notification: payload,
+            webpush: {
+              notification: {
+                requireInteraction: false,
+                renotify: false,
+              },
+            },
+            tokens: fcmTokens,
+          };
 
-                        this.notificationModel.create(save_notify)
-                        console.log("save_notify",save_notify);
-                        
-                        this.loyalty_point(user_id, driver_id, ride_id)
-                    }
-                });
-            }
+          const response = await this.firebase.messaging.sendEachForMulticast(messagePayload);
+          response.responses.forEach((res, index) => {
+            if (res.success) {
+              const { user_id } = tokenChunk[index];
 
-            // if (notificationsToSave.length > 0) {
-            //     console.log(notificationsToSave,"notificationsToSave");
-
-            //     // await this.notificationModel.insertMany(notificationsToSave, { ordered: false });
-            // }
-
-            return;
-        } catch (error) {
-            console.error('Error sending notifications:', error);
-            throw error;
-        }
-    }
-
-    async loyalty_point(user_id: string, driver_id: string | Types.ObjectId, ride_id: string|Types.ObjectId) {
-        try {
-            let query = {
+              let save_notify = {
                 user_id: new Types.ObjectId(user_id),
                 driver_id: new Types.ObjectId(driver_id),
-                ride_id: new Types.ObjectId(ride_id),
-            }
-            let point = await this.loyaltyPointModel.findOne(query, {}, this.option);
-            if (!point) {
-                let data = {
-                    user_id: new Types.ObjectId(user_id),
-                    driver_id: new Types.ObjectId(driver_id),
-                    ride_id: new Types.ObjectId(ride_id),
-                    loyalty_point: 5
-                }
-                await this.loyaltyPointModel.create(data)
-                await this.userModel.findByIdAndUpdate(
-                    { _id: new Types.ObjectId(user_id) },
-                    { $inc: { loyalty_point: 5 } },
-                )
-            }
-        } catch (error) {
-            throw error
-        }
-    }
+                message,
+                status: RideStatus.STARTED,
 
+                created_at: new Date(),
+              };
+
+              this.notificationModel.create(save_notify);
+              console.log('save_notify', save_notify);
+
+              this.loyalty_point(user_id, driver_id, ride_id);
+            }
+          });
+        }
+
+      return;
+    } catch (error) {
+      console.error('Error sending notifications:', error);
+      throw error;
+    }
+  }
+
+  async loyalty_point(
+    user_id: string,
+    driver_id: string | Types.ObjectId,
+    ride_id: string | Types.ObjectId,
+  ) {
+    try {
+      let query = {
+        user_id: new Types.ObjectId(user_id),
+        driver_id: new Types.ObjectId(driver_id),
+        ride_id: new Types.ObjectId(ride_id),
+      };
+      let point = await this.loyaltyPointModel.findOne(query, {}, this.option);
+      if (!point) {
+        let data = {
+          user_id: new Types.ObjectId(user_id),
+          driver_id: new Types.ObjectId(driver_id),
+          ride_id: new Types.ObjectId(ride_id),
+          loyalty_point: 5,
+        };
+        await this.loyaltyPointModel.create(data);
+        await this.userModel.findByIdAndUpdate(
+          { _id: new Types.ObjectId(user_id) },
+          { $inc: { loyalty_point: 5 } },
+        );
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
 }
