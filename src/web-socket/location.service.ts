@@ -11,6 +11,7 @@ import { LatLong } from './dto/web-socket.dto';
 export class LocationService {
   private option = { lean: true, sort: { _id: -1 } } as const;
   private updateOption = { new: true, sort: { _id: -1 } } as const;
+
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Session.name) private sessionModel: Model<SessionDocument>,
@@ -19,7 +20,6 @@ export class LocationService {
     private commonService: CommonService,
     private notificationService: NotificationService,
   ) {}
-  
 
   async findUsersAhead(
     driver_id: string,
@@ -27,47 +27,51 @@ export class LocationService {
     lat: number,
     long: number,
     bearing: number,
-    radiusInKm: number,
+    distanceAhead: number = 1000, // Default: 1 km ahead
+    coneAngle: number = 30, // Default: 30-degree cone
   ) {
     try {
-      console.log("findUsersAhead");
+      console.log('findUsersAhead');
 
-      // 1. Calculate future position projection
-      const futurePoint = this.calculateFuturePosition(
-        [long, lat],
-        bearing,
-        5.5556, // 20 km/h in m/s
-        180, // 180 seconds to reach 1 km
+      // Calculate the two points forming the base of the triangle
+      const halfAngle = coneAngle / 2;
+      const pointA = this.calculatePointAtDistance(
+        lat,
+        long,
+        distanceAhead,
+        bearing - halfAngle,
+      );
+      const pointB = this.calculatePointAtDistance(
+        lat,
+        long,
+        distanceAhead,
+        bearing + halfAngle,
       );
 
-      // 2. Find users in projected path
+      // Define the polygon (triangle: current position, pointA, pointB)
+      const polygon = {
+        type: 'Polygon',
+        coordinates: [
+          [
+            [long, lat], // Apex at ambulance’s current position
+            [pointA[0], pointA[1]], // Left vertex
+            [pointB[0], pointB[1]], // Right vertex
+            [long, lat], // Close the polygon
+          ],
+        ],
+      };
+
+      // Find users within the polygon
       const users = await this.userModel.aggregate([
         {
-          $geoNear: {
-            near: { type: 'Point', coordinates: futurePoint },
-            distanceField: 'distance',
-            maxDistance: radiusInKm * 1000,
-            query: {
-              _id: { $ne: new Types.ObjectId(driver_id) },
-              role: 'USER',
-              //   last_notified: { $lt: new Date(Date.now() - 300000) }, // 5 min cooldown
-            },
-            spherical: true,
-          },
-        },
-        {
-          $addFields: {
-            bearingDiff: {
-              $abs: { $subtract: ['$current_bearing', bearing] },
-            },
-          },
-        },
-        {
           $match: {
-            $or: [
-              { bearingDiff: { $lte: 15 } }, // 30° total cone (15° each side)
-              { bearingDiff: { $gte: 345 } },
-            ],
+            location: {
+              $geoWithin: {
+                $geometry: polygon,
+              },
+            },
+            _id: { $ne: new Types.ObjectId(driver_id) }, // Exclude the driver
+            role: 'USER',
           },
         },
         {
@@ -85,26 +89,23 @@ export class LocationService {
           $project: {
             fcm_token: '$session.fcm_token',
             _id: 1,
-            distance: 1,
           },
         },
       ]);
-      console.log("users",users);
-      // 3. Send notifications and update timestamps
+
+      console.log('users', users);
+
+      // Send notifications to found users
       if (users?.length > 0) {
         const tokens = users.map((u) => u?.fcm_token).filter(Boolean);
-        let message = 'An ambulance is coming. Please move aside';
-        let title = 'Emergency Vehicle Alert';
+        const message = 'An ambulance is approaching. Please move aside.';
+        const title = 'Emergency Vehicle Alert';
         await this.notificationService.send_notification(
           tokens,
           message,
           title,
           driver_id,
           ride_id,
-        );
-        await this.userModel.updateMany(
-          { _id: { $in: users.map((u) => u._id) } },
-          { $set: { last_notified: new Date() } },
         );
       }
 
@@ -115,14 +116,43 @@ export class LocationService {
     }
   }
 
+  private calculatePointAtDistance(
+    lat: number,
+    long: number,
+    distanceMeters: number,
+    bearingDegrees: number,
+  ): [number, number] {
+    const R = 6378137; // Earth radius in meters
+    const δ = distanceMeters / R; // Angular distance
+    const θ = bearingDegrees * (Math.PI / 180);
+
+    const φ1 = lat * (Math.PI / 180);
+    const λ1 = long * (Math.PI / 180);
+
+    const φ2 = Math.asin(
+      Math.sin(φ1) * Math.cos(δ) + Math.cos(φ1) * Math.sin(δ) * Math.cos(θ),
+    );
+
+    const λ2 =
+      λ1 +
+      Math.atan2(
+        Math.sin(θ) * Math.sin(δ) * Math.cos(φ1),
+        Math.cos(δ) - Math.sin(φ1) * Math.sin(φ2),
+      );
+
+    return [
+      ((λ2 * (180 / Math.PI) + 540) % 360) - 180, // Normalize longitude to -180 to 180
+      φ2 * (180 / Math.PI), // Latitude
+    ];
+  }
 
   async save_coordinates(
     user: any,
     payload: LatLong,
   ): Promise<{ driver: any; driverBearing: number }> {
     try {
-      console.log("save_coordinates");
-      
+      console.log('save_coordinates');
+
       const { lat, long } = payload;
       const query = { _id: new Types.ObjectId(user._id) };
 
@@ -178,36 +208,6 @@ export class LocationService {
       throw new Error(`Invalid coordinate value: ${value}`);
     }
     return value;
-  }
-
-  private calculateFuturePosition(
-    [long, lat]: [number, number],
-    bearing: number,
-    speedMps: number,
-    projectionSeconds: number,
-  ): [number, number] {
-    const R = 6378137; // Earth radius in calculateFuturePositionmeters
-    const δ = (speedMps * projectionSeconds) / R;
-    const θ = bearing * (Math.PI / 180);
-
-    const φ1 = lat * (Math.PI / 180);
-    const λ1 = long * (Math.PI / 180);
-
-    const φ2 = Math.asin(
-      Math.sin(φ1) * Math.cos(δ) + Math.cos(φ1) * Math.sin(δ) * Math.cos(θ),
-    );
-
-    const λ2 =
-      λ1 +
-      Math.atan2(
-        Math.sin(θ) * Math.sin(δ) * Math.cos(φ1),
-        Math.cos(δ) - Math.sin(φ1) * Math.sin(φ2),
-      );
-
-    return [
-      λ2 * (180 / Math.PI), // longitude
-      φ2 * (180 / Math.PI), // latitude
-    ];
   }
 
   private async calculateMovementMetrics(
