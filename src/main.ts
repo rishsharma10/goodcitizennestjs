@@ -1,21 +1,20 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import * as fs from "fs";
 import * as express from 'express';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { config } from 'dotenv';
-import * as bodyParser from 'body-parser';
 config()
 const PORT = process.env.PORT || 3001; 
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule,{
+    logger: ['debug', 'error', 'log', 'verbose', 'warn']
+  });
   app.enableVersioning({ type: VersioningType.URI }); // URL versioning e.g., /v1/auth
   app.enableCors();
   app.use(express.json());
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true, skipMissingProperties: true  }));
-  app.useGlobalPipes(new ValidationPipe({ skipMissingProperties: true, transform: true, whitelist: true }));
   const config = new DocumentBuilder()
     .setTitle('Goodcitizen App')
     .setDescription('Goodcitizen App API description')
