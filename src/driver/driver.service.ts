@@ -47,9 +47,10 @@ export class DriverService {
       }
       let ride = await this.driverRideModel.create(data);
       let payload = { lat: pickup_location.latitude, long: pickup_location.longitude }
-      let { driver, driverBearing } = await this.webSocketService.save_coordinates(user, payload);
-      await this.webSocketService.findUsersAhead(driver._id, ride._id, driver?.latitude,
-        driver?.longitude, driverBearing, 5,true);
+      let driver= await this.locationService.save_coordinates(user, payload);
+      if(!driver) return
+      await this.locationService.findUsersAhead(driver._id, ride._id, driver?.latitude,
+        driver?.longitude, 5,true);
       return { message: "Ride Started", data: ride } 
     } catch (error) {
       throw error

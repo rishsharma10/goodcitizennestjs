@@ -38,7 +38,7 @@ export class LocationService {
     private notificationService: NotificationService,
     private httpService: HttpService,
   ) {
-   
+
   }
 
   async findUsersAhead(
@@ -75,7 +75,7 @@ export class LocationService {
       const users = await this.userModel.find(query, projection, this.option);
       let from = { long: (ride?.pickup_location?.longitude).toString(), lat: (ride?.pickup_location.latitude).toString() }
       let to = { long: (ride?.drop_location.longitude.toString()), lat: (ride?.drop_location.latitude).toString() }
-      const usersToNotify: any = users.map(async (user) => {
+      const usersToNotify: any = await Promise.all(users.map(async (user) => {
         let userLocation = { long: (user.longitude).toString(), lat: (user.latitude).toString() }
         let dto = { from, to, user: userLocation }
         let { shouldAlert } = await this.calculateBearingAlert(dto)
@@ -83,9 +83,9 @@ export class LocationService {
           const token = await this.sessionModel.findOne({ user_id: user._id }).lean();
           return token
         }
-      })
+      }));
       const validTokens = usersToNotify
-        .filter((token) => token?.fcm_token !== null)
+        .filter((token) => token?.fcm_token !== null && token?.fcm_token !== undefined)
         .map((token) => ({
           fcm_token: token?.fcm_token,
           user_id: token?.user_id,
@@ -113,6 +113,10 @@ export class LocationService {
       let query = { _id: new Types.ObjectId(user._id) };
       const latitude = parseFloat(lat);
       const longitude = parseFloat(long);
+      let location = {
+        type: 'Point',
+        coordinates: [longitude, latitude], // MongoDB format: [long, lat]
+      };
       let update = {
         $set: {
           pre_location: user?.location || {
@@ -168,6 +172,9 @@ export class LocationService {
     const isCorrectBearing = Math.abs(bearing) <= this.BEARING_THRESHOLD;
 
     const shouldAlert = isInDistance && isCorrectBearing && isInsideCorridor;
+    console.log("isInDistance", isInDistance);
+    console.log("isCorrectBearing", isCorrectBearing);
+    console.log("isInsideCorridor", isInsideCorridor);
 
     if (shouldAlert) {
       console.log('🚨 ALERT: User meets all conditions');
