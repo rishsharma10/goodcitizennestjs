@@ -84,8 +84,7 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log("driver_location",user)
       let driver= await this.locationService.save_coordinates(user, payload);
       if(!driver) return
-      await this.locationService.findUsersAhead(driver, payload.ride_id, driver?.latitude,
-        driver?.longitude, 5,false);
+      await this.locationService.findUsersAhead(driver, payload.ride_id, 5,false);
     } catch (error) {
       throw error
     }

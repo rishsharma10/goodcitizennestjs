@@ -47,8 +47,6 @@ export class LocationService {
   async findUsersAhead(
     driver: UserDocument,
     ride_id: string | Types.ObjectId,
-    lat: number,
-    long: number,
     radiusInKm: number,
     is_first: boolean,
   ) {
@@ -56,15 +54,15 @@ export class LocationService {
       const query = {
         _id: { $ne: new Types.ObjectId(driver._id) },
         role: 'USER',
-        location: {
-          $nearSphere: {
-            $geometry: {
-              type: 'Point',
-              coordinates: [long, lat],
-            },
-            $maxDistance: radiusInKm * 1000, // Convert km to meters
-          },
-        },
+        // location: {
+        //   $nearSphere: {
+        //     $geometry: {
+        //       type: 'Point',
+        //       coordinates: [driver.location.coordinates[0], driver.location.coordinates[1]],
+        //     },
+        //     $maxDistance: radiusInKm * 1000, // Convert km to meters
+        //   },
+        // },
       };
 
       const projection = {
@@ -74,10 +72,10 @@ export class LocationService {
         longitude: 1,
         pre_location: 1,
       };
+      const users = await this.userModel.find(query, projection, this.option);
       let ride: any = await this.driverRideModel
         .findById({ _id: ride_id })
         .lean();
-      const users = await this.userModel.find(query, projection, this.option);
       let from = {
         long: (driver?.location.coordinates[0]).toString(),
         lat: (driver?.location.coordinates[1]).toString(),
@@ -241,24 +239,30 @@ export class LocationService {
       parseFloat(request.from.lat),
       parseFloat(request.from.long),
     );
-    const corridorWidth = this.getCorridorWidth(roadInfo?.type);
-    console.log("corridorWidth",corridorWidth)
     // Create route line and buffer using Google Maps Directions API
     const routeLine = await this.getRoutePath(
       { lat: parseFloat(request.from.lat), lon: parseFloat(request.from.long) },
       { lat: parseFloat(request.to.lat), lon: parseFloat(request.to.long) },
     );
-    const corridorBuffer: Feature<Polygon | MultiPolygon> = turf.buffer(
-      routeLine,
-      corridorWidth,
-      { units: 'meters' },
-    ) as Feature<Polygon | MultiPolygon>;
+    const corridorWidth = await this.getCorridorWidth(roadInfo?.type)+15;
+    console.log("corridorWidth",corridorWidth)
+    // const corridorBuffer: Feature<Polygon | MultiPolygon> = turf.buffer(
+      //   routeLine,
+      //   corridorWidth,
+      //   { units: 'meters' },
+    // ) as Feature<Polygon | MultiPolygon>;
+    const corridorBuffer = turf.buffer(routeLine, corridorWidth, {
+      units: 'meters',
+    }) as Feature<Polygon | MultiPolygon>;
+    // const distanceToRoute = turf.pointToLineDistance(userPoint, routeLine, { units: 'meters' });
+    // const isInsideCorridor = distanceToRoute <= corridorWidth;
+    const isInsideCorridor = turf.booleanPointInPolygon(userPoint, corridorBuffer);
 
     // Check conditions
-    const isInsideCorridor = turf.booleanPointInPolygon(
-      userPoint,
-      corridorBuffer,
-    );
+    // const isInsideCorridor = turf.booleanPointInPolygon(
+    //   userPoint,
+    //   corridorBuffer,
+    // );
     const isInDistance = distanceInMeters <= this.DESTINATION_DISTANCE;
     const isCorrectBearing = Math.abs(bearing) <= this.BEARING_THRESHOLD;
 
@@ -279,6 +283,33 @@ export class LocationService {
     };
   }
 
+  // private async getRoutePath(
+  //   from: { lat: number; lon: number },
+  //   to: { lat: number; lon: number },
+  // ): Promise<Feature<LineString>> {
+  //   try {
+  //     const departureTime = Math.floor(Date.now() / 1000);
+  //     const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${from.lat},${from.lon}&destination=${to.lat},${to.lon}&mode=driving&traffic_model=best_guess&departure_time=${departureTime}&key=${this.GOOGLE_API_KEY}`;
+  //     const response = await firstValueFrom(this.httpService.get(url));
+
+  //     if (response.data.status !== 'OK') {
+  //       throw new Error(`Google Maps API error: ${response.data.status}`);
+  //     }
+
+  //     const route = response.data.routes[0];
+  //     console.log('======route',route);
+  //     const polylineEncoded = route.overview_polyline.points;
+  //     const coordinates = polyline
+  //       .decode(polylineEncoded)
+  //       .map(([lat, lon]) => [lon, lat]);
+
+  //     return turf.lineString(coordinates);
+  //   } catch (error) {
+  //     console.error('Error fetching route from Google Maps:', error);
+  //     throw error;
+  //   }
+  // }
+
   private async getRoutePath(
     from: { lat: number; lon: number },
     to: { lat: number; lon: number },
@@ -286,26 +317,27 @@ export class LocationService {
     try {
       const departureTime = Math.floor(Date.now() / 1000);
       const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${from.lat},${from.lon}&destination=${to.lat},${to.lon}&mode=driving&traffic_model=best_guess&departure_time=${departureTime}&key=${this.GOOGLE_API_KEY}`;
+      
       const response = await firstValueFrom(this.httpService.get(url));
-
+  
       if (response.data.status !== 'OK') {
         throw new Error(`Google Maps API error: ${response.data.status}`);
       }
-
-      const route = response.data.routes[0];
-      console.log('======route',route);
-      const polylineEncoded = route.overview_polyline.points;
-      const coordinates = polyline
-        .decode(polylineEncoded)
-        .map(([lat, lon]) => [lon, lat]);
-
-      return turf.lineString(coordinates);
+  
+      const steps = response.data.routes[0].legs[0].steps;
+  
+      const fullCoordinates = steps.flatMap((step: any) =>
+        polyline.decode(step.polyline.points).map(([lat, lon]) => [lon, lat])
+      );
+  
+      return turf.lineString(fullCoordinates);
     } catch (error) {
       console.error('Error fetching route from Google Maps:', error);
       throw error;
     }
   }
 
+  
   private async getRoadType(lat: number, lon: number) {
     try {
       const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
@@ -317,7 +349,7 @@ export class LocationService {
     }
   }
 
-  private getCorridorWidth(roadType?: string): number {
+  private async getCorridorWidth(roadType?: string): Promise<number> {
     switch (roadType?.toLowerCase()) {
       case 'secondary':
         return this.SECONDARY_CORRIDOR;
