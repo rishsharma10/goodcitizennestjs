@@ -18,7 +18,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { BadGatewayException } from '@nestjs/common';
 import * as polyline from '@mapbox/polyline';
-
+interface  LatLng  { lat: number; lng: number };
 export class LocationService {
   private option = { lean: true, sort: { _id: -1 } } as const;
   private updateOption = { new: true, sort: { _id: -1 } } as const;
@@ -70,6 +70,7 @@ export class LocationService {
         socket_id: 1,
         latitude: 1,
         longitude: 1,
+        location: 1,
         pre_location: 1,
       };
       const users = await this.userModel.find(query, projection, this.option);
@@ -85,16 +86,44 @@ export class LocationService {
         lat: (ride?.drop_location.latitude).toString(),
       };
 
+      // const usersToNotify: any = await Promise.all(
+      //   users.map(async (user) => {
+      //     let userLocation = {
+      //       long: user.longitude.toString(),
+      //       lat: user.latitude.toString(),
+      //     };
+      //     let dto = { from, to, user: userLocation };
+      //     console.log("user, ",user._id);
+          
+      //     let { shouldAlert } = await this.calculateBearingAlert(dto);
+      //     if (shouldAlert) {
+      //       const token = await this.sessionModel
+      //         .findOne({ user_id: user._id })
+      //         .lean();
+      //       return token;
+      //     }
+      //   }),
+      // );
+      let driverpre = {
+        lng: driver.pre_location.coordinates[0],
+        lat: driver.pre_location.coordinates[1],
+      };
+      let driverNow = {
+        lng: driver.longitude,
+        lat: driver.latitude,
+      };
       const usersToNotify: any = await Promise.all(
         users.map(async (user) => {
-          let userLocation = {
-            long: user.longitude.toString(),
-            lat: user.latitude.toString(),
+          let userpre = {
+            lng: user.pre_location.coordinates[0],
+            lat: user.pre_location.coordinates[1],
           };
-          let dto = { from, to, user: userLocation };
-          console.log("user, ",user._id);
+          let useNow = {
+            lng: user.longitude,
+            lat: user.latitude,
+          };
           
-          let { shouldAlert } = await this.calculateBearingAlert(dto);
+          let  shouldAlert  = await this.isUserMovingTowardAmbulance(userpre,useNow,driverpre,driverNow);
           if (shouldAlert) {
             const token = await this.sessionModel
               .findOne({ user_id: user._id })
@@ -358,5 +387,68 @@ export class LocationService {
       default:
         return this.DEFAULT_CORRIDOR;
     }
+  }
+
+
+  async isUserMovingTowardAmbulance(
+    userPrev: LatLng,
+    userNow: LatLng,
+    driverPrev: LatLng,
+    driverNow: LatLng,
+    maxDistanceKm: number = 5,
+    maxDirectionDiff: number = 60 // optional: degrees
+  ): Promise<boolean> {
+  
+    const distanceBefore = await this.getDistance(userPrev, driverPrev);
+    const distanceAfter = await this.getDistance(userNow, driverPrev);
+  
+    const inRange = distanceAfter > distanceBefore 
+  
+    if (!inRange) return false;
+  
+    const userBearing = await this.calculateBearing(userPrev, userNow);
+    const driverBearing = await this.calculateBearing(driverPrev, driverNow);
+  
+    const angleDiff = await this.getAngleDifference(userBearing, driverBearing);
+  
+    return angleDiff <= maxDirectionDiff;
+  }
+
+  async getAngleDifference(a: number, b: number): Promise<number> {
+    const diff = Math.abs(a - b) % 360;
+    return diff > 180 ? 360 - diff : diff;
+  }
+
+  async getDistance(a: LatLng, b: LatLng): Promise<number> {
+    const R = 6371; // Radius of Earth in km
+    const dLat = await this.toRad(b.lat - a.lat);
+    const dLng = await this.toRad(b.lng - a.lng);
+    const lat1 = await this.toRad(a.lat);
+    const lat2 = await this.toRad(b.lat);
+  
+    const aVal = Math.sin(dLat / 2) ** 2 +
+                 Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(aVal), Math.sqrt(1 - aVal));
+    return R * c;
+  }
+  
+  async toRad(deg: number): Promise<number> {
+    return deg * (Math.PI / 180);
+  }
+
+  async toDeg(rad: number): Promise<number> {
+    return rad * (180 / Math.PI);
+  }
+
+  async calculateBearing(from: LatLng, to: LatLng): Promise<number> {
+    const lat1 = await this.toRad(from.lat);
+    const lat2 = await this.toRad(to.lat);
+    const dLng = await this.toRad(to.lng - from.lng);
+  
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) -
+              Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    const bearingRad = Math.atan2(y, x);
+    return (await this.toDeg(bearingRad) + 360) % 360;
   }
 }
