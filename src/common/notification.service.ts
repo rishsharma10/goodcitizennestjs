@@ -60,6 +60,8 @@ export class NotificationService {
           };
 
           const response = await this.firebase.messaging.sendEachForMulticast(messagePayload);
+          console.log("resp",response);
+          
           response.responses.forEach((res, index) => {
             if (res.success) {
               const { user_id } = tokenChunk[index];

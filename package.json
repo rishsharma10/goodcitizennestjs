@@ -21,6 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@mapbox/polyline": "^1.2.1",
     "@nestjs/axios": "^4.0.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.1",
@@ -57,7 +58,9 @@
     "@swc/core": "^1.10.7",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
+    "@types/geojson": "^7946.0.16",
     "@types/jest": "^29.5.14",
+    "@types/mapbox__polyline": "^1.0.5",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.10.7",
     "@types/passport-jwt": "^4.0.1",

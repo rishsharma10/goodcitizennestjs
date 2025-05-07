@@ -49,7 +49,7 @@ export class DriverService {
       let payload = { lat: pickup_location.latitude, long: pickup_location.longitude }
       let driver= await this.locationService.save_coordinates(user, payload);
       if(!driver) return
-      await this.locationService.findUsersAhead(driver._id, ride._id, driver?.latitude,
+      await this.locationService.findUsersAhead(driver, ride._id, driver?.latitude,
         driver?.longitude, 5,true);
       return { message: "Ride Started", data: ride } 
     } catch (error) {
