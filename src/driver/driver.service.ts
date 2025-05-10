@@ -43,13 +43,14 @@ export class DriverService {
         drop_location: drop,
         pickup_address,
         drop_address,
+        last_notification: new Date(),
         status: RideStatus.STARTED,
       }
       let ride = await this.driverRideModel.create(data);
       let payload = { lat: pickup_location.latitude, long: pickup_location.longitude }
       let driver= await this.locationService.save_coordinates(user, payload);
       if(!driver) return
-      await this.locationService.findUsersAhead(driver, ride._id, 5,true);
+      await this.locationService.findUsersAhead(driver, ride, 5,true);
       return { message: "Ride Started", data: ride } 
     } catch (error) {
       throw error

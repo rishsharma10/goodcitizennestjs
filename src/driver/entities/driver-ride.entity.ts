@@ -34,6 +34,9 @@ export class DriverRide {
     @Prop()
     drop_address: string;
 
+    @Prop()
+    last_notification: Date;
+
     @Prop({ default: null })
     created_at: number;
 }

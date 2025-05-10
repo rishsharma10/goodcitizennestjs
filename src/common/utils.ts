@@ -32,3 +32,8 @@ export enum DIRECTION {
 export interface Query {
   [key: string]: string | boolean| Types.ObjectId;
 }
+
+export interface locationNow{
+  long:number,
+  lat:number,
+}

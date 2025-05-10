@@ -2,9 +2,11 @@ import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayConnectio
 import { Server, Socket } from 'socket.io';
 import { WebSocketService } from './web-socket.service';
 import { DriverLatLong, LatLong } from './dto/web-socket.dto';
-import { Types } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { UnauthorizedException } from '@nestjs/common';
 import { LocationService } from './location.service';
+import { InjectModel } from '@nestjs/mongoose';
+import { DriverRide, DriverRideDocument } from 'src/driver/entities/driver-ride.entity';
 
 interface CustomSocket extends Socket {
   user: any;
@@ -18,6 +20,8 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly webSocketService: WebSocketService,
     private readonly locationService: LocationService,
+    @InjectModel(DriverRide.name)
+    private driverRideModel: Model<DriverRideDocument>,
   ) { }
 
   async handleConnection(socket: CustomSocket, ...args: any[]) {
@@ -84,7 +88,12 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log("driver_location",user)
       let driver= await this.locationService.save_coordinates(user, payload);
       if(!driver) return
-      await this.locationService.findUsersAhead(driver, payload.ride_id, 5,false);
+      let ride: any = await this.driverRideModel.findById({ _id:  payload.ride_id }).lean();
+      const currentDate = Date.now();
+      const diffInMinutes = (currentDate - new Date(ride?.last_notification).getTime()) / (1000 * 60);
+      if(diffInMinutes>1){
+        await this.locationService.findUsersAhead(driver, ride, 5,false);
+      }
     } catch (error) {
       throw error
     }
