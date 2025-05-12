@@ -48,9 +48,11 @@ export class DriverService {
       }
       let ride = await this.driverRideModel.create(data);
       let payload = { lat: pickup_location.latitude, long: pickup_location.longitude }
+      console.log(user,'userrrrrrrrrr')
       let driver= await this.locationService.save_coordinates(user, payload);
+      console.log(driver,"driverrrrrrrrrrrrr")
       if(!driver) return
-      await this.locationService.findUsersAhead(driver, ride, 5,true);
+       await this.locationService.findUsersAhead(driver, ride, 5,true);
       return { message: "Ride Started", data: ride } 
     } catch (error) {
       throw error

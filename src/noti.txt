@@ -27,49 +27,61 @@ export class NotificationService {
   ) {}
 
   async send_notification(
-    data: any,
+    tokens: any,
     message: string,
     title: string,
     driver_id: string | Types.ObjectId,
     ride_id: string | Types.ObjectId,
   ) {
-    console.log(data, 'notiiiidatataaa______________________');
-    const fcmToken = data?.fcm_token;
-    if (!fcmToken || typeof fcmToken !== 'string' || fcmToken.length < 10) {
-      console.warn('Invalid or missing FCM token. Skipping notification.');
-      return;
-    }
-
     try {
-      const payload = {
-        notification: {
+      console.log('tokens---', tokens);
+
+      const chunkSize = 500;
+        const payload = {
           title,
           body: message,
-        },
-        token: data?.fcm_token,
-        webpush: {
-          notification: {
-            requireInteraction: false,
-            renotify: false,
-          },
-        },
-      };
+        };
+   
+        for (let i = 0; i < tokens.length; i += chunkSize) {
+          const tokenChunk = tokens.slice(i, i + chunkSize);
 
-      const response = await this.firebase.messaging.send(payload);
-      console.log('Notification sent successfully:', response);
+          const fcmTokens = tokenChunk.map((t) => t.fcm_token);
 
-      const save_notify = {
-        user_id: new Types.ObjectId(data?.user_id),
-        driver_id: new Types.ObjectId(driver_id),
-        message,
-        status: RideStatus.STARTED,
-        created_at: new Date(),
-      };
 
-      await this.notificationModel.create(save_notify);
-      console.log('Notification saved:', save_notify);
+          const messagePayload = {
+            notification: payload,
+            webpush: {
+              notification: {
+                requireInteraction: false,
+                renotify: false,
+              },
+            },
+            tokens: fcmTokens,
+          };
 
-      await this.loyalty_point(data?._id, driver_id, ride_id);
+          const response = await this.firebase.messaging.sendEachForMulticast(messagePayload);
+          console.log("resp",response);
+          
+          response.responses.forEach((res, index) => {
+            if (res.success) {
+              const { user_id } = tokenChunk[index];
+
+              let save_notify = {
+                user_id: new Types.ObjectId(user_id),
+                driver_id: new Types.ObjectId(driver_id),
+                message,
+                status: RideStatus.STARTED,
+
+                created_at: new Date(),
+              };
+
+              this.notificationModel.create(save_notify);
+              console.log('save_notify', save_notify);
+
+              this.loyalty_point(user_id, driver_id, ride_id);
+            }
+          });
+        }
 
       return;
     } catch (error) {
