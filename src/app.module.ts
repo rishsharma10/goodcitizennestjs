@@ -16,6 +16,7 @@ import { modelDefinitions } from './user/entities';
 import { commonModelDefinitions } from './entities';
 import { FirebaseModule } from 'nestjs-firebase';
 import { rideModelDefinitions } from './driver/entities';
+import { AdminModule } from './admin/admin.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -47,6 +48,7 @@ import { rideModelDefinitions } from './driver/entities';
     DriverModule,
     UserModule,
     WebSocketModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService, CommonService, JwtStrategy, VerificationStrategy, TempStrategy, RolesGuard],

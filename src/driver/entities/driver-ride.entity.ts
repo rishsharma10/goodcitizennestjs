@@ -3,31 +3,31 @@ import { HydratedDocument, Types } from "mongoose";
 import { User } from "../../user/entities/user.entity";
 import { RideStatus } from "src/common/utils";
 
-@Schema({versionKey: false })
+@Schema({ versionKey: false })
 export class DriverRide {
 
     @Prop({ type: Types.ObjectId, ref: User.name })
     driver_id: Types.ObjectId;
 
-    @Prop({ 
-        type: { 
-            latitude: { type: Number, required: true }, 
-            longitude: { type: Number, required: true } 
-        } 
+    @Prop({
+        type: {
+            latitude: { type: Number, required: true },
+            longitude: { type: Number, required: true }
+        }
     })
     pickup_location: { latitude: number; longitude: number };
 
-    @Prop({ 
-        type: { 
-            latitude: { type: Number, required: true }, 
-            longitude: { type: Number, required: true } 
-        } 
+    @Prop({
+        type: {
+            latitude: { type: Number, required: true },
+            longitude: { type: Number, required: true }
+        }
     })
     drop_location: { latitude: number; longitude: number };
 
-    @Prop({enum: RideStatus, default: RideStatus.PENDING })
+    @Prop({ enum: RideStatus, default: RideStatus.PENDING })
     status: string;
-    
+
     @Prop()
     pickup_address: string;
 
@@ -37,8 +37,8 @@ export class DriverRide {
     @Prop()
     last_notification: Date;
 
-    @Prop({ default: null })
-    created_at: number;
+    @Prop({ default: Date.now() })
+    created_at: Date;
 }
 
 export type DriverRideDocument = HydratedDocument<DriverRide>;

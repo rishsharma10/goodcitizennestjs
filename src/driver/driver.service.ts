@@ -44,6 +44,7 @@ export class DriverService {
         pickup_address,
         drop_address,
         last_notification: new Date(),
+        created_at: Date.now(),
         status: RideStatus.STARTED,
       }
       let ride = await this.driverRideModel.create(data);

@@ -323,7 +323,7 @@ export class LocationService {
           // return data
         })
         .filter(Boolean);
-
+        await this.driverRideModel.updateOne({_id:ride._id},{last_notification: new Date(),})
       // const usersToNotify: any = await Promise.all(
       //   users.filter(user => !!user && user.longitude && user.latitude)
       //   .map(async (user) => {
