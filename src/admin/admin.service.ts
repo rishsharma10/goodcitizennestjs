@@ -26,19 +26,19 @@ export class AdminService {
     private readonly configService: ConfigService,
 
   ) {
-    this.ADMIN_EMAIL = this.configService.get<string>("ADMIN_EMAIL")!
-    this.PASSWORD = this.configService.get<string>("PASSWORD")!
+    // this.ADMIN_EMAIL = this.configService.get<string>("ADMIN_EMAIL")!
+    // this.PASSWORD = this.configService.get<string>("PASSWORD")!
 
     this.create_admin()
   }
 
   async create_admin() {
-    let query = { email: this.ADMIN_EMAIL.toLowerCase() }
+    let query = { email: "admin@gmail.com" }
     let is_admin = await this.userModel.findOne(query, {}, { lean: true })
     if (!is_admin) {
-      let hashPassword = await this.commonServices.hashPassword(this.PASSWORD)
+      let hashPassword = await this.commonServices.hashPassword("Asdfghjkl@1")
       let data = {
-        email: this.ADMIN_EMAIL.toLowerCase(),
+        email: "admin@gmail.com",
         password: hashPassword,
         role: UserType.ADMIN,
         createdAt: Date.now()
